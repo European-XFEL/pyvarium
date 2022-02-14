@@ -9,7 +9,7 @@ from ..installers.poetry import Poetry
 from ..installers.pyvarium import Pyvarium
 from ..installers.spack import Spack
 
-app = typer.Typer()
+app = typer.Typer(help="Sync Spack-managed packages with Poetry pyproject.toml")
 
 
 @app.callback(invoke_without_command=True)

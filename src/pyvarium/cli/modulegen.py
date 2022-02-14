@@ -7,7 +7,7 @@ from jinja2 import Template
 
 from ..installers.pyvarium import Pyvarium
 
-app = typer.Typer()
+app = typer.Typer(help="Generate modulefile to load the current environment")
 
 modulefile_template = Template(
     """#%Module 1.0
