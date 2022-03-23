@@ -14,14 +14,6 @@ from loguru import logger
 
 from .base import Installer
 
-sync_hook = """
-import llnl.util.tty as tty
-
-
-def on_install_success(spec):
-    tty.info()
-"""
-
 
 class Spack(Installer):
     def __init__(
@@ -62,13 +54,8 @@ class Spack(Installer):
         cls,
         prefix: Path,
         version: str = "develop",
-        e4s: bool = False,
     ) -> None:
         logger.info("Starting Spack setup")
-
-        if e4s and "e4s" not in version:
-            logger.info("Setting version to e4s-22.02")
-            version = "e4s-22.02"
 
         cmd = (
             "git clone https://github.com/spack/spack.git --depth 1 --branch "
@@ -78,9 +65,6 @@ class Spack(Installer):
 
         process = subprocess.run(cmd, shell=True, check=True, capture_output=True)
         logger.debug(process)
-
-        if e4s:
-            cmd = f"{prefix}/bin/spack mirror add E4S https://cache.e4s.io/22.02"
 
         logger.info("Completed Spack setup")
 
@@ -218,7 +202,7 @@ class Spack(Installer):
         **kwargs,
     ) -> "Spack":
         spack = cls("create", prefix, executable, protected, env_path)
-        cmd = f"env create -d {env_path} --with-view {env_path / 'venv'}"
+        cmd = f"env create -d {env_path} --with-view {env_path / '.venv'}"
 
         spack.cmd(cmd, no_env=True, **kwargs)
 
@@ -272,7 +256,7 @@ class Spack(Installer):
     def list_python_packages(self, cwd: Optional[Path] = None) -> list:
         """Lists the python packages present in the spack environment"""
 
-        cmd = "PYTHONNOUSERSITE=True venv/bin/python -m pip list --format json"
+        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json"
         res = subprocess.run(
             cmd, shell=True, capture_output=True, cwd=cwd or self.env_path
         )

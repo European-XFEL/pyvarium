@@ -60,8 +60,8 @@ def main(
         pyvarium.spack.add(["py-pip"])
         pyvarium.spack.install(install_processes)
 
-        if not (path / "venv/bin/pip").exists():
-            (path / "venv/bin/pip").symlink_to(path / "venv/bin/pip3")
+        if not (path / ".venv/bin/pip").exists():
+            (path / ".venv/bin/pip").symlink_to(path / ".venv/bin/pip3")
 
 
 if __name__ == "__main__":
