@@ -150,7 +150,7 @@ Once the environment is set up the directory will contain:
 
 ```
 .
-├── .venv
+├── venv
 ├── activate.fish
 ├── activate.sh
 ├── poetry.lock

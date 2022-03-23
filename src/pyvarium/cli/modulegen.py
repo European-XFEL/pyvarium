@@ -52,6 +52,6 @@ def main(
 
     print(
         modulefile_template.render(
-            name="lol", paths=[f"{k} {v}" for k, v in paths.items()]
+            name=path.name, paths=[f"{k} {v}" for k, v in paths.items()]
         ),
     )

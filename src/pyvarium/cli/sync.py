@@ -1,22 +1,19 @@
-from enum import Enum
 from pathlib import Path
 from typing import Optional
 
 import typer
 from loguru import logger
 
-from ..installers.poetry import Poetry
 from ..installers.pyvarium import Pyvarium
-from ..installers.spack import Spack
 
 app = typer.Typer(help="Sync Spack-managed packages with Poetry pyproject.toml")
 
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Path = typer.Argument(..., file_okay=False),
+    path: Optional[Path] = typer.Argument(None, file_okay=False),
 ):
-    path = Path(path).absolute()
+    path = Path(path or Path().cwd()).absolute()
 
     if not path.exists() or not path.is_dir():
         logger.critical(f"path {path} is not a directory", err=True)

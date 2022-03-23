@@ -30,8 +30,8 @@ class Installer(ABC):
     ) -> None:
         self.installer_config = InstallerConfig(
             action=action,
-            prefix=prefix,
-            executable=executable,
+            prefix=prefix.resolve(),
+            executable=executable.resolve(),
             installed=executable.exists(),
             protected=protected or action == "use",
         )

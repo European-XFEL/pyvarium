@@ -62,8 +62,13 @@ class Spack(Installer):
         cls,
         prefix: Path,
         version: str = "develop",
+        e4s: bool = False,
     ) -> None:
         logger.info("Starting Spack setup")
+
+        if e4s and "e4s" not in version:
+            logger.info("Setting version to e4s-22.02")
+            version = "e4s-22.02"
 
         cmd = (
             "git clone https://github.com/spack/spack.git --depth 1 --branch "
@@ -73,6 +78,9 @@ class Spack(Installer):
 
         process = subprocess.run(cmd, shell=True, check=True, capture_output=True)
         logger.debug(process)
+
+        if e4s:
+            cmd = f"{prefix}/bin/spack mirror add E4S https://cache.e4s.io/22.02"
 
         logger.info("Completed Spack setup")
 
@@ -203,18 +211,19 @@ class Spack(Installer):
         env_path: Path,
         prefix: Optional[Union[Path, str]] = None,
         executable: Optional[Union[Path, str]] = None,
-        force: bool = False,
+        # force: bool = False,
         protected: bool = True,
-        no_env: bool = True,
+        # no_env: bool = True,
         concretization: str = "together",
         **kwargs,
     ) -> "Spack":
         spack = cls("create", prefix, executable, protected, env_path)
-        cmd = f"env create -d {env_path} --with-view {env_path / '.venv'}"
+        cmd = f"env create -d {env_path} --with-view {env_path / 'venv'}"
 
-        spack.cmd(cmd, no_env=no_env, **kwargs)
+        spack.cmd(cmd, no_env=True, **kwargs)
 
-        spack.cmd("config add 'packages:all:target:[x86_64]'", no_env=no_env)
+        spack.cmd("config add 'packages:all:target:[x86_64]'")
+
         spack._set_concretization(concretization)
 
         return spack
@@ -263,7 +272,7 @@ class Spack(Installer):
     def list_python_packages(self, cwd: Optional[Path] = None) -> list:
         """Lists the python packages present in the spack environment"""
 
-        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json"
+        cmd = "PYTHONNOUSERSITE=True venv/bin/python -m pip list --format json"
         res = subprocess.run(
             cmd, shell=True, capture_output=True, cwd=cwd or self.env_path
         )

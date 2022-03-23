@@ -1,6 +1,7 @@
 """Install the specified environment."""
 
 from pathlib import Path
+from typing import Optional
 
 import typer
 from loguru import logger
@@ -12,13 +13,12 @@ app = typer.Typer()
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Path = typer.Argument(...),
+    path: Optional[Path] = None,
     install_processes: int = 1,
-    force: bool = False,
     noconfirm: bool = False,
 ):
     """Install the specified environment."""
-    path = Path(path).absolute()
+    path = Path(path or Path().cwd()).absolute()
 
     if not path.exists() or not path.is_dir():
         logger.critical(f"path {path} is not a directory", err=True)
@@ -27,31 +27,14 @@ def main(
     config_path = path / "pyproject.toml"
 
     if not config_path.is_file():
-        logger.critical(f"{config_path} not found, did you run `pyvarium new`?")
+        logger.critical(f"{config_path} not found", err=True)
         raise typer.Abort()
 
     installer = Pyvarium.env_load(path)
 
-    spack_src = (
-        installer.spack.installer_config.prefix / "share" / "spack" / "setup-env.sh"
-    )
-
-    logger.info(
-        f"Use `source {spack_src}` to activate the spack instance associated with this "
-        "environment."
-    )
-
     logger.info("Installing base spack packages")
 
     installer.spack.install(install_processes)
-
-    logger.info("Activate spack environment with `spack env activate .`")
-
-    logger.info(
-        "Once environment is activated, follow standard spack environment setup "
-        "procedures, see docs if required: "
-        "https://spack.readthedocs.io/en/latest/environments.html"
-    )
 
     installer.sync_python_constraint()
 
@@ -87,7 +70,7 @@ def main(
         "or poetry as normal."
     )
     logger.warning(
-        "Make sure to keep any python packages added via spack locked via poetry.",
+        "Make sure to keep any python packages added via spack synced with poetry.",
     )
 
 

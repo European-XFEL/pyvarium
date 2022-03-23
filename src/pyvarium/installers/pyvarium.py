@@ -83,13 +83,13 @@ class Pyvarium:
         spack_share = spack.installer_config.prefix / "share" / "spack"
 
         activate_script_sh = [
-            f"source {spack_share / 'setup-env.sh'}",
+            f"source {spack_share.absolute() / 'setup-env.sh'}",
             f"spack env activate {env_path}",
         ]
         (env_path / "activate.sh").write_text("\n".join(activate_script_sh))
 
         activate_script_fish = [
-            f"source {spack_share / 'setup-env.fish'}",
+            f"source {spack_share.absolute() / 'setup-env.fish'}",
             f"spack env activate {env_path}",
         ]
         (env_path / "activate.fish").write_text("\n".join(activate_script_fish))

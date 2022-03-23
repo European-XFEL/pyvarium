@@ -1,7 +1,6 @@
-ENV_ROOT = "/gpfs/sw/environments"
-
-POETRY_PREFIX = "@format {this.ENV_ROOT}/.poetry"
+POETRY_PREFIX = "/gpfs/exfel/sw/software/.poetry"
 POETRY_EXEC = "@format {this.POETRY_PREFIX}/bin/poetry"
 
-SPACK_PREFIX = "/gpfs/sw/spack/current"
+SPACK_PREFIX = "/gpfs/exfel/sw/spack/current"
 SPACK_EXEC = "@format {this.SPACK_PREFIX}/bin/spack"
+SPACK_MIRROR = "/gpfs/exfel/sw/spack/spack-mirror"
