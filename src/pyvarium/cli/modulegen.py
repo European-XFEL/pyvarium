@@ -31,13 +31,13 @@ if { [ module-info mode load ] } {
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Path = typer.Argument(...),
+    path: Path = typer.Argument("."),
 ):
     path = Path(path).absolute()
     installer = Pyvarium.env_load(path)
 
     res = (
-        installer.spack.cmd("env activate --sh .", no_env=True, prepend="env -i ")
+        installer.spack.cmd("env activate --sh .", no_env=True, prepend="env -i")
         .stdout.decode()
         .split("\n")
     )
@@ -47,6 +47,10 @@ def main(
         for l in res
         if l.startswith("export ")
     }
+
+    env_vars.pop("PYTHONPATH", None)
+
+    env_vars["VIRTUAL_ENV"] = f"{path.parent.name}/{path.name}"
 
     paths = {k: ":".join(list(v.split(":"))).strip(":;") for k, v in env_vars.items()}
 

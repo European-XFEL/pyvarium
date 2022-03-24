@@ -11,7 +11,7 @@ app = typer.Typer(help="Sync Spack-managed packages with Poetry pyproject.toml")
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Optional[Path] = typer.Argument(None, file_okay=False),
+    path: Optional[Path] = typer.Argument(".", file_okay=False),
 ):
     path = Path(path or Path().cwd()).absolute()
 

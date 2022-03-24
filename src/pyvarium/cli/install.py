@@ -13,7 +13,7 @@ app = typer.Typer()
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Optional[Path] = None,
+    path: Optional[Path] = typer.Argument("."),
     install_processes: int = 1,
     noconfirm: bool = False,
 ):

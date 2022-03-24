@@ -195,9 +195,7 @@ class Spack(Installer):
         env_path: Path,
         prefix: Optional[Union[Path, str]] = None,
         executable: Optional[Union[Path, str]] = None,
-        # force: bool = False,
         protected: bool = True,
-        # no_env: bool = True,
         concretization: str = "together",
         **kwargs,
     ) -> "Spack":
@@ -205,8 +203,6 @@ class Spack(Installer):
         cmd = f"env create -d {env_path} --with-view {env_path / '.venv'}"
 
         spack.cmd(cmd, no_env=True, **kwargs)
-
-        spack.cmd("config add 'packages:all:target:[x86_64]'")
 
         spack._set_concretization(concretization)
 
