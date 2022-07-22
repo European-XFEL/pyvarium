@@ -1,0 +1,83 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-20.04
+    container: ghcr.io/robertrosca/pyvarium-test-image:feat-initial-dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          eval `/opt/spack/bin/spack load --sh python py-pip tar`
+          python3 -m venv .venv-it
+          source .venv-it/bin/activate
+          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade poetry
+          poetry install
+      - name: Test
+        run: |
+          eval `/opt/spack/bin/spack load --sh python py-pip tar`
+          source .venv-it/bin/activate
+          python3 -m pytest --integration-only --cached-spack="/opt/spack"
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
+  unit-tests:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: ${{ !env.ACT }}
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: ${{ matrix.python-version }}-pip-${{ hashFiles('**/pyproject.toml') }}
+      - name: Setup
+        run: |
+          sudo apt install gcc-10 g++-10
+          python3 -m pip install --upgrade pip
+          python3 -m pip install ".[test]"
+      - name: Test
+        run: |
+          python3 -m pytest -s --color yes --verbose --cov=pyvarium
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
+  regression-tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        if: ${{ !env.ACT }}
+        with:
+          python-version: 3.8
+      - name: Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: 3.8-pip-${{ hashFiles('**/pyproject.toml') }}
+      - name: Regression - execution while in activated Poetry environment
+        run: |
+          [ "$ACT" ] && sudo chown runner:runner $HOME
+          echo "Checking for issues when executing with an activated Poetry env"
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+          source $HOME/.poetry/env
+          poetry install -E test
+          poetry run python3 -m pytest -s --color yes --verbose --cov=pyvarium
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
