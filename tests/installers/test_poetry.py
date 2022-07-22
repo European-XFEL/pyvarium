@@ -7,7 +7,7 @@ from pyvarium.installers.poetry import Poetry
 
 class TestPoetry:
     @pytest.fixture(autouse=True, scope="class")
-    def poetry_home(self, tmp_path_factory) -> Path:
+    def poetry_home(self, tmp_path_factory) -> Path:  # type: ignore
         tmpdir = tmp_path_factory.mktemp("TestPoetry") / "poetry"
         yield tmpdir
 
@@ -22,8 +22,8 @@ class TestPoetry:
         assert subprocess.run([str(poetry_exec), "--version"]).returncode == 0
 
     def test_setup_no_force(self, poetry_home: Path):
-        with pytest.raises(FileExistsError):
-            Poetry.setup(poetry_home)
+        process = Poetry.setup(poetry_home)
+        assert "is already installed" in process.stdout.decode()
 
     def test_init(self, poetry_home: Path, environment: Path):
         Poetry.env_create(
@@ -36,16 +36,24 @@ class TestPoetry:
         assert (environment / "poetry.toml").is_file()
 
     def test_add(self, poetry_home: Path, environment: Path):
-        poetry = Poetry(environment, executable=poetry_home / "bin" / "poetry")
+        poetry = Poetry(
+            action="use",
+            pyvarium_env_path=environment,
+            executable=poetry_home / "bin" / "poetry"
+        )
         # This should only create the lock file, should not create the
         # environment
-        poetry.add("cowsay", lock=True)
+        poetry.add(["cowsay"], lock=True)
         assert "cowsay" in (environment / "pyproject.toml").read_text()
         assert (environment / "poetry.lock").is_file()
 
     def test_install_env(self, poetry_home: Path, environment: Path):
-        poetry = Poetry(environment, executable=poetry_home / "bin" / "poetry")
-        poetry.install_env()
+        poetry = Poetry(
+            action="use",
+            pyvarium_env_path=environment,
+            executable=poetry_home / "bin" / "poetry"
+        )
+        poetry.install()
 
         assert (environment / ".venv").is_dir()
         assert (environment / ".venv" / "bin" / "python").is_file()

@@ -16,12 +16,8 @@ class TestSpack:
         return root.parent / "environment"
 
     def test_setup(self, root: Path):
-        Spack.setup(root, force=False)
+        Spack.setup(root)
         assert (root / "bin" / "spack").is_file()
-
-    def test_setup_no_force(self, root: Path):
-        with pytest.raises(FileExistsError):
-            Spack.setup(root, force=False)
 
     def test_env_create(self, root: Path, environment: Path):
         Spack.env_create(environment, executable=root / "bin" / "spack")
@@ -35,7 +31,7 @@ class TestSpack:
         ).is_file(), f"config not found at {environment / 'spack.yaml'}"
 
     def test_env_configs(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment, executable=root / "bin" / "spack")
+        spack = Spack.env_load(environment)
         spack.cmd("compiler find")
         spack.cmd("compiler list")
 
@@ -44,8 +40,8 @@ class TestSpack:
             assert config.spack.view == str(environment / ".venv")
 
     def test_env_add(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment, executable=root / "bin" / "spack")
-        spack.add("python@3.8.11", "py-pip")
+        spack = Spack.env_load(environment)
+        spack.add(["python@3.8.11", "py-pip"])
 
         with spack.config() as config:
             assert "python@3.8.11" in config.spack.specs
@@ -54,13 +50,13 @@ class TestSpack:
         assert not (environment / "spack.lock").is_file()
 
     def test_env_concretize(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment, executable=root / "bin" / "spack")
+        spack = Spack.env_load(environment)
         spack.concretize()
 
         assert (environment / "spack.lock").is_file()
 
     def test_version(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment, executable=root / "bin" / "spack")
+        spack = Spack.env_load(environment)
         assert spack.version
 
 
@@ -78,7 +74,7 @@ class TestSpackIntegration:
     def test_env_install(self, root: Path, environment: Path):
         spack = Spack.env_create(environment, executable=root / "bin" / "spack")
 
-        spack.add("python@3.8.11", "py-pip")
+        spack.add(["python@3.8.11", "py-pip"])
         spack.concretize()
         spack.install()
 
@@ -89,7 +85,7 @@ class TestSpackIntegration:
     def test_env_install_parallel(self, root: Path, environment: Path):
         spack = Spack.env_create(environment, executable=root / "bin" / "spack")
 
-        spack.add("py-numpy")
+        spack.add(["py-numpy"])
         spack.concretize()
         spack.install(processes=4)
 

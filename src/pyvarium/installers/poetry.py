@@ -102,9 +102,9 @@ class Poetry(Installer):
     def setup(
         cls,
         prefix: Path,
-        url: str = "https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py",
+        url: str = "https://install.python-poetry.org",
         preview_version: bool = False,
-    ) -> None:
+    ) -> subprocess.CompletedProcess:
         logger.info("Starting Poetry setup")
         script = NamedTemporaryFile()
 
@@ -123,6 +123,8 @@ class Poetry(Installer):
 
         process.check_returncode()
         logger.info("Completed Poetry setup")
+
+        return process
 
     @classmethod
     @delegates(cmd)
