@@ -43,5 +43,5 @@ def post_env_write(env):
     # overwrite/delete the existing scripts
     if "default" in env.views:
         env_path = Path(env.views["default"].root)
-        if env_path.exists():
+        if env_path.exists() and not (env_path / "bin" / "activate").exists():
             setup_scripts(env_path)

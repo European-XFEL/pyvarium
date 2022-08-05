@@ -80,6 +80,7 @@ class Settings(BaseSettings):
         settings = self.dict()
 
         settings_file = Path("~/.config/pyvarium/settings.toml").expanduser()
+        settings_file.parent.mkdir(parents=True, exist_ok=True)
         s = to_str(settings)
         settings_file.write_text(rtoml.dumps(s))
 

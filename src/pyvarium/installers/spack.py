@@ -102,7 +102,8 @@ class SpackEnvironment(Environment):
         return cmd_json_to_dict(res)
 
     def find_python_packages(self):
-        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
+        venv_path = Path(self.path / ".venv")
+        cmd = f"PYTHONNOUSERSITE=True {venv_path}/bin/python -m pip list --format json --disable-pip-version-check"
         res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
 
         return json.loads(res.stdout.decode().strip())
