@@ -8,6 +8,7 @@ from pathlib import Path
 
 import typer
 from loguru import logger
+from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TextColumn
 
 from pyvarium.installers import pipenv, spack
 
@@ -20,23 +21,34 @@ def main(
 ):
     """Create a new environment - requires existing instances"""
 
-    # if path.exists():
-    #     raise typer.Exit(f"Path {path} already exists")
+    if path.exists():
+        raise typer.Abort(f"Path {path} already exists")
 
-    se = spack.SpackEnvironment(path)
-    # se.new()
-    # se.add("python", "py-pip")
-    # se.concretize()
-    # se.install()
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task("Creating new Pyvarium environment")
+        se = spack.SpackEnvironment(path)
+        progress.update(task, description="Creating Spack environment")
+        se.new()
+        progress.update(task, description="Adding `python` and `pip`")
+        se.add("python@3:")
+        se.add("py-pip")
+        progress.update(task, description="Concretizing")
+        se.concretize()
+        progress.update(task, description="Installing")
+        se.install()
 
-    pe = pipenv.PipenvEnvironment(path)
-    # pe.new(python_path=se.path / ".venv" / "bin" / "python")
-    se_python = [
-        f"{p['name']}=={p['version']}"
-        for p in se.find_python_packages()
-        if p["name"] != "pip"
-    ]
-    pe.add(*se_python)
+        pe = pipenv.PipenvEnvironment(path)
+        pe.new(python_path=se.path / ".venv" / "bin" / "python")
+        se_python = [
+            f"{p['name']}=={p['version']}"
+            for p in se.find_python_packages()
+            if p["name"] != "pip"
+        ]
+        pe.add(*se_python)
 
 
 if __name__ == "__main__":

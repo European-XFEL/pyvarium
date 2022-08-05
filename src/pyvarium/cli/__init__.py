@@ -55,9 +55,11 @@ def pre_checks():
             )
             if Confirm.ask(f"Run `{install_cmd}`?"):
                 subprocess.run(install_cmd, shell=True)
+            else:
+                raise FileNotFoundError(name)
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, no_args_is_help=True)
 def main(
     log_level: LogLevel = typer.Option(
         LogLevel.info, help="Pick which level of output to show", case_sensitive=False
