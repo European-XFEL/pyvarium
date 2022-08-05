@@ -1,5 +1,0 @@
-POETRY_PREFIX = "/gpfs/exfel/sw/software/.poetry"
-POETRY_EXEC = "@format {this.POETRY_PREFIX}/bin/poetry"
-
-SPACK_PREFIX = "/gpfs/exfel/sw/spack/current"
-SPACK_EXEC = "@format {this.SPACK_PREFIX}/bin/spack"
