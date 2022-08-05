@@ -1,276 +1,117 @@
 import json
-import os
+import shutil
 import subprocess
-from contextlib import contextmanager
-from functools import partial
-from multiprocessing import Pool, current_process
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
-import pyaml
-from box import Box
-from fastcore.meta import delegates
+import yaml
 from loguru import logger
 
-from .base import Installer
+from pyvarium.installers import python_venv
+from pyvarium.installers.base import Environment, Program
 
 
-class Spack(Installer):
-    def __init__(
-        self,
-        action: str,
-        prefix: Optional[Union[Path, str]] = None,
-        executable: Optional[Union[Path, str]] = None,
-        protected: Optional[bool] = None,
-        pyvarium_env_path: Optional[Union[Path, str]] = None,
-        pyvarium_env_name: Optional[str] = None,
-    ) -> None:
-        if not prefix and not executable:
-            raise ValueError("Either prefix or executable must be specified")
+def recursive_dict_update(d, u):
+    for k, v in u.items():
+        if isinstance(v, dict):
+            r = recursive_dict_update(d.get(k, {}) if d is dict else {}, v)
+            d[k] = r
+        else:
+            d[k] = v
+    return d
 
-        if prefix and executable and Path(executable).parent.parent != prefix:
-            raise RuntimeError("Executable must be in the same directory as prefix")
 
-        if prefix and not executable:
-            executable = Path(prefix) / "bin" / "spack"
+def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
+    return json.loads(cmd.stdout.decode())
 
-        if executable and not prefix:
-            prefix = Path(executable).parent.parent
 
-        super().__init__(
-            action,
-            prefix,  # type: ignore
-            executable,  # type: ignore
-            protected=protected,
-            pyvarium_env_path=Path(pyvarium_env_path) if pyvarium_env_path else None,
-            pyvarium_env_name=pyvarium_env_name,
+class Spack(Program):
+    def __post_init__(self):
+        spack_dir = self.executable.parent.parent
+        hooks_dir = spack_dir / "lib" / "spack" / "spack" / "hooks"
+
+        if not hooks_dir.exists():
+            raise Exception(f"Spack hooks directory does not exist: {hooks_dir}")
+
+        shutil.copy(
+            Path(__file__).parent / "python_venv.py",
+            hooks_dir / "pyvarium_venv_activate.py",
         )
 
-        if self.env_path:
-            self.config_path = self.env_path / "spack.yaml"
 
-    @classmethod
-    def setup(
-        cls,
-        prefix: Path,
-        version: str = "develop",
-    ) -> None:
-        logger.info("Starting Spack setup")
+class SpackEnvironment(Environment):
+    program: Spack
 
-        cmd = (
-            "git clone https://github.com/spack/spack.git --depth 1 --branch "
-            f"{version} {prefix}"
+    def cmd(self, *args):
+        return self.program.cmd("--env-dir", str(self.path), *args)
+
+    def new(self, *, view_path: Path = Path(".venv")):
+        commands = ["env", "create", "-d", str(self.path)]
+
+        if view_path:
+            if not view_path.is_absolute():
+                view_path = self.path / view_path
+            # Views are disabled here, as we set them manually via `set_config` to set
+            # the link type to `run`
+            commands.extend(["--without-view"])
+
+        res = self.program.cmd(*commands)
+        print(res)
+
+        self.set_config({"spack": {"concretizer": {"unify": True}}})
+        self.set_config(
+            {
+                "spack": {
+                    "view": {
+                        "default": {"root": str(view_path.resolve()), "link": "run"}
+                    }
+                }
+            }
         )
-        logger.debug(f"Running {cmd}")
-
-        process = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-        logger.debug(process)
-
-        logger.info("Completed Spack setup")
-
-    def cmd(
-        self,
-        cmd: str,
-        *,
-        cwd: Optional[Path] = None,
-        prepend: Optional[str] = None,
-        environ: Optional[Union[Dict, os._Environ]] = os.environ,
-        no_env: bool = False,
-    ) -> subprocess.CompletedProcess:
-        """Execute a command with Spack
-
-        Args:
-            cmd (str): Command string to execute.
-            env (Optional[Path], optional): Directory the environment is in, will be
-                loaded with `spack -D {env}`. Defaults to None.
-            cwd (Optional[Path], optional): Directory to execute the command in.
-                Defaults to None.
-            prepend (Optional[str], optional): String to prepend to the command.
-                Defaults to None.
-            environ (Optional[dict], optional): Set environment variables. Defaults to
-                None (empty dict).
-
-        Returns:
-            subprocess.CompletedProcess: Returned process object.
-        """
-        e = f" -D {self.env_path} " if self.env_path else " "
-        e = " " if no_env else e
-        cmd = f"{self.installer_config.executable}{e}{cmd}"
-
-        if prepend:
-            cmd = f"{prepend} {cmd}"
-
-        environ = environ or {}
-
-        process = subprocess.run(
-            cmd,
-            env=environ,
-            cwd=cwd,
-            shell=True,
-            check=False,
-            capture_output=True,
-            executable="/bin/bash",
-        )
-
-        logger.debug(f"{process=}")
-        process.check_returncode()
-
-        return process
-
-    def cmd_mp(
-        self,
-        cmd: str,
-        *,
-        cwd: Optional[Path] = None,
-        prepend: Optional[str] = None,
-        environ: Optional[Union[Dict, os._Environ]] = os.environ,
-        no_env: bool = False,
-    ) -> subprocess.CompletedProcess:
-        e = f" -D {self.env_path} " if self.env_path else " "
-        e = " " if no_env else e
-        cmd = f"{self.installer_config.executable}{e}{cmd}"
-
-        if prepend:
-            cmd = f"{prepend} {cmd}"
-
-        environ = environ or {}
-
-        process_id = int(current_process().name.split("-")[-1])
-
-        log_level = f"SPACK-{process_id:02}"
-        self.logger = logger.bind(id=process_id)
-        self.logger.level(log_level, no=20, color="<green>")
-        self.logger.log(log_level, cmd)
-
-        process = subprocess.Popen(
-            cmd,
-            env=environ,
-            cwd=cwd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            executable="/bin/bash",
-        )
-
-        self.logger.log(log_level, f"{process=}")
-
-        while process.poll() is None:
-            for line in iter(process.stdout.readline, b""):  # type: ignore
-                line_str = line.decode().strip()
-                if "[+]" not in line_str:
-                    self.logger.log(log_level, line_str)
-
-        res = subprocess.CompletedProcess(
-            process.args,
-            process.returncode,
-            process.stdout.readlines(),  # type: ignore
-            process.stderr.readlines(),  # type: ignore
-        )
-
-        self.logger.log(log_level, f"{res=}")
 
         return res
 
-    @contextmanager
-    def config(self):
-        """Convenience function to handle loading and saving the spack configuration
-        file in a context manager."""
-        config = Box.from_yaml(self.config_path.read_text())
-        try:
-            yield config
-        finally:
-            pyaml.dump(config.to_dict(), self.config_path.open("w"))
+    def init_view(self):
+        res = self.cmd("env", "view", "regenerate")
+        python_venv.setup_scripts(self.path / ".venv")
+        return res
 
-    @property
-    def _config(self) -> Box:
-        """Returns a frozen Box object with the configuration of spack so that it is not
-        edited accidentally, the `_spack_config` context manager should be used if the
-        config will be modified"""
-        return Box.from_yaml(self.config_path.read_text(), frozen_box=True)
+    def add(self, *packages):
+        return self.cmd("add", *packages)
 
-    @classmethod
-    @delegates(cmd)
-    def env_create(
-        cls,
-        env_path: Path,
-        prefix: Optional[Union[Path, str]] = None,
-        executable: Optional[Union[Path, str]] = None,
-        protected: bool = True,
-        concretization: str = "together",
-        **kwargs,
-    ) -> "Spack":
-        spack = cls("create", prefix, executable, protected, env_path)
-        cmd = f"env create -d {env_path} --with-view {env_path / '.venv'}"
+    def install(self):
+        if not (self.path / "spack.lock").exists():
+            logger.warning("No spack.lock file found, nothing will be installed")
 
-        spack.cmd(cmd, no_env=True, **kwargs)
+        return self.cmd("install", "--only-concrete", "--only", "package", "--no-add")
 
-        spack._set_concretization(concretization)
+    def spec(self, spec: str) -> dict:
+        res = self.cmd("spec", "-I", "--reuse", "--json", spec)
+        return cmd_json_to_dict(res)
 
-        return spack
+    def concretize(self):
+        return self.cmd("concretize", "--reuse")
 
-    @classmethod
-    def env_load(
-        cls,
-        env_path: Path,
-        protected: bool = True,
-    ) -> "Spack":
-        pyproject = cls._pyproject(env_path)
+    def find(self) -> dict:
+        res = self.cmd("find", "--json")
+        return cmd_json_to_dict(res)
 
-        spack_executable = Path(pyproject.tool.pyvarium.spack.executable)
-
-        if not spack_executable.exists():
-            raise RuntimeError(f"Spack executable `{spack_executable}` not found")
-
-        return cls("use", None, spack_executable, protected, env_path)
-
-    def add(self, packages: List[str]):
-        """Add packages to spack environment"""
-
-        self.cmd(f"add {' '.join(packages)}")
-
-    @delegates(cmd)
-    def install(self, processes: int = 0, **kwargs):
-        if processes <= 1:
-            return self.cmd("install", **kwargs)
-
-        logger.info(f"Running install with {processes} processes")
-        with Pool(processes) as pool:
-            logger.debug(f"Pool info: {pool}")
-            res = [
-                pool.apply_async(partial(self.cmd_mp, "install", **kwargs))
-                for _ in range(processes)
-            ]
-
-            [logger.trace(r.get()) for r in res]
-
-    @delegates(cmd)
-    def concretize(self, **kwargs):
-        """Concretize the spack environment"""
-
-        self.cmd("concretize", **kwargs)
-
-    def list_python_packages(self, cwd: Optional[Path] = None) -> list:
-        """Lists the python packages present in the spack environment"""
-
-        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json"
-        res = subprocess.run(
-            cmd, shell=True, capture_output=True, cwd=cwd or self.env_path
+    def find_missing(self) -> dict:
+        res = self.cmd(
+            "find", "--show-concretized", "--deps", "--only-missing", "--json"
         )
+        return cmd_json_to_dict(res)
+
+    def find_python_packages(self):
+        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
+        res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
 
         return json.loads(res.stdout.decode().strip())
 
-    def _set_concretization(self, concretization: str) -> None:
-        """Set the concretization setting for the environment"""
-        with self.config() as config:
-            if concretization in {"together", "individual"}:
-                config.spack.concretization = concretization  # type: ignore
-            else:
-                raise RuntimeError(
-                    f"Invalid concretization: {concretization}, must be 'together' or "
-                    "'individual'"
-                )
+    def get_config(self):
+        return yaml.safe_load((self.path / "spack.yaml").read_text())
 
-    @property
-    def version(self) -> str:
-        """Return the version of the spack instance."""
-        return self.cmd("--version", no_env=True).stdout.decode().strip()
+    def set_config(self, config: dict):
+        current_config = self.get_config()
+        new_config = recursive_dict_update(current_config, config)
+
+        yaml.dump(new_config, (self.path / "spack.yaml").open("w"))
