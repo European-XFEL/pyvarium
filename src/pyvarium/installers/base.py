@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 from loguru import logger
+from rich.status import Status
 
 from pyvarium.config import settings
 
@@ -14,7 +15,19 @@ class Program:
     cwd: Path
     env: Union[Dict, os._Environ]
 
-    def __init__(self, executable: Optional[Path] = None, post_init: bool = True):
+    def __init__(
+        self,
+        executable: Optional[Path] = None,
+        post_init: bool = True,
+        status: Optional[Status] = None,
+    ):
+        if status:
+            original_text = status.status
+            update_text = f"{original_text}: {{x}}"
+            self.update_status = lambda x: status.update(update_text.format(x=x))
+        else:
+            self.update_status = lambda *_: None
+
         if executable is None:
             executable = settings.__getattribute__(self.__class__.__name__.lower())
 
@@ -38,15 +51,20 @@ class Program:
         ...
 
     def cmd(self, *args) -> subprocess.CompletedProcess:
-        logger.trace([self.executable, *args])
+        logger.debug(f"`{self.executable.name} {' '.join(args)}`")
+        self.update_status(f"`{self.executable.name} {' '.join(args)}`")
         res = subprocess.run(
             [self.executable, *args],
             cwd=self.cwd,
             env=self.env,
             capture_output=True,
         )
-        logger.debug(res.stderr.decode())
-        logger.debug(res.stdout.decode())
+
+        if res.returncode != 0:
+            logger.error(f"Process return code is not 0: {res=}")
+
+        logger.debug(res.stderr.decode()) if res.stderr else None
+        logger.trace(res.stdout.decode()) if res.stdout else None
         return res
 
     def config(self):
@@ -66,10 +84,16 @@ class Environment:
     program: Program
 
     def __init__(
-        self, path: Path, program: Optional[Program] = None, post_init: bool = True
+        self,
+        path: Path,
+        program: Optional[Program] = None,
+        post_init: bool = True,
+        status: Optional[Status] = None,
     ) -> None:
         self.path = Path(path)
-        self.program = program or self.__annotations__["program"]()
+        self.program = program or self.__annotations__["program"](
+            post_init=post_init, status=status
+        )
 
         if post_init:
             self.__post_init__()
@@ -87,13 +111,4 @@ class Environment:
         ...
 
     def install(self):
-        ...
-
-    def get_config(self) -> dict:
-        ...
-
-    def set_config(self, config: dict):
-        ...
-
-    def sync(self):
         ...

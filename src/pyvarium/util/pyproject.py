@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 import rtoml
-from pydantic import BaseModel
+from pydantic.main import BaseModel
 
 from pyvarium import __version__
 

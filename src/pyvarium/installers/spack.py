@@ -6,8 +6,8 @@ from pathlib import Path
 import yaml
 from loguru import logger
 
-from pyvarium.installers import python_venv
 from pyvarium.installers.base import Environment, Program
+from pyvarium.util import python_venv
 
 
 def recursive_dict_update(d, u):
@@ -30,10 +30,12 @@ class Spack(Program):
         hooks_dir = spack_dir / "lib" / "spack" / "spack" / "hooks"
 
         if not hooks_dir.exists():
-            raise Exception(f"Spack hooks directory does not exist: {hooks_dir}")
+            raise FileNotFoundError(
+                f"Spack hooks directory does not exist: {hooks_dir}"
+            )
 
         shutil.copy(
-            Path(__file__).parent / "python_venv.py",
+            python_venv.__file__,
             hooks_dir / "pyvarium_venv_activate.py",
         )
 
@@ -55,7 +57,6 @@ class SpackEnvironment(Environment):
             commands.extend(["--without-view"])
 
         res = self.program.cmd(*commands)
-        print(res)
 
         self.set_config({"spack": {"concretizer": {"unify": True}}})
         self.set_config(
@@ -101,12 +102,18 @@ class SpackEnvironment(Environment):
         )
         return cmd_json_to_dict(res)
 
-    def find_python_packages(self):
-        venv_path = Path(self.path / ".venv")
-        cmd = f"PYTHONNOUSERSITE=True {venv_path}/bin/python -m pip list --format json --disable-pip-version-check"
+    def find_python_packages(self, only_names: bool = False):
+        cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
         res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
 
-        return json.loads(res.stdout.decode().strip())
+        packages = json.loads(res.stdout.decode().strip())
+
+        if only_names:
+            packages = [
+                f"{p['name']}=={p['version']}" for p in packages if p["name"] != "pip"
+            ]
+
+        return packages
 
     def get_config(self):
         return yaml.safe_load((self.path / "spack.yaml").read_text())

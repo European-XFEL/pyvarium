@@ -3,31 +3,27 @@ from typing import Optional
 
 import typer
 from loguru import logger
+from rich.status import Status
 
-from ..installers.pyvarium import Pyvarium
+from pyvarium.installers import pipenv, spack
 
-app = typer.Typer(help="Sync Spack-managed packages with Poetry pyproject.toml")
+app = typer.Typer(help="Sync Spack-managed packages with Pipenv.")
 
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Optional[Path] = typer.Argument(".", file_okay=False),
+    path: Optional[Path] = typer.Option(".", file_okay=False),
 ):
-    path = Path(path or Path().cwd()).absolute()
+    if path is None:
+        path = Path(".")
 
-    if not path.exists() or not path.is_dir():
-        logger.critical(f"path {path} is not a directory", err=True)
-        raise typer.Abort()
+    path = path.resolve()
 
-    config_path = path / "pyproject.toml"
-
-    if not config_path.is_file():
-        logger.critical(f"{config_path} not found, did you run `pyvarium new`?")
-        raise typer.Abort()
-
-    installer = Pyvarium.env_load(path)
-
-    installer.sync_python_packages()
+    with Status("Syncing Spack and Pipenv packages") as status:
+        se = spack.SpackEnvironment(path, status=status)
+        pe = pipenv.PipenvEnvironment(path, status=status)
+        se_python = se.find_python_packages(only_names=True)
+        pe.add(*se_python)
 
 
 if __name__ == "__main__":

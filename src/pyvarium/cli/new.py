@@ -1,14 +1,8 @@
-"""
-Module for handling environment creation, but not the installation phases.
-This should only set up the required configuration files, similar to how `poetry
-new` only creates the `pyproject.toml` file but does not install anything.
-"""
-
 from pathlib import Path
 
 import typer
 from loguru import logger
-from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TextColumn
+from rich.status import Status
 
 from pyvarium.installers import pipenv, spack
 
@@ -19,35 +13,26 @@ app = typer.Typer()
 def main(
     path: Path = typer.Argument(..., file_okay=False),
 ):
-    """Create a new environment - requires existing instances"""
+    """Create a new combined Spack and Pipenv environment."""
 
     if path.exists():
-        raise typer.Abort(f"Path {path} already exists")
+        logger.error(
+            f"Directory already exists at path {path.absolute()}\n"
+            "Remove it or use another path to continue."
+        )
+        raise typer.Exit(code=1)
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        TimeElapsedColumn(),
-    ) as progress:
-        task = progress.add_task("Creating new Pyvarium environment")
-        se = spack.SpackEnvironment(path)
-        progress.update(task, description="Creating Spack environment")
+    with Status("Spack setup") as status:
+        se = spack.SpackEnvironment(path, status=status)
         se.new()
-        progress.update(task, description="Adding `python` and `pip`")
-        se.add("python@3:")
-        se.add("py-pip")
-        progress.update(task, description="Concretizing")
+        se.add("python", "py-pip")
         se.concretize()
-        progress.update(task, description="Installing")
         se.install()
 
-        pe = pipenv.PipenvEnvironment(path)
+    with Status("Pipenv setup") as status:
+        pe = pipenv.PipenvEnvironment(path, status=status)
         pe.new(python_path=se.path / ".venv" / "bin" / "python")
-        se_python = [
-            f"{p['name']}=={p['version']}"
-            for p in se.find_python_packages()
-            if p["name"] != "pip"
-        ]
+        se_python = se.find_python_packages(only_names=True)
         pe.add(*se_python)
 
 

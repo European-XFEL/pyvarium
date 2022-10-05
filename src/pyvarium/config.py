@@ -10,7 +10,7 @@ THIS_DIR = Path(__file__).parent.absolute()
 
 
 def to_snake_case(d: dict) -> dict:
-    """Recursively converts the keys of a dictionary to snake_case style"""
+    """Recursively converts the keys of a dictionary to snake_case style."""
     res = {}
     for k, v in d.items():
         if isinstance(v, dict):
@@ -22,7 +22,7 @@ def to_snake_case(d: dict) -> dict:
 
 
 def to_str(d: dict) -> dict:
-    """Recursively converts the values of a dictionary to str"""
+    """Recursively converts the values of a dictionary to str."""
     res = {}
     for k, v in d.items():
         if isinstance(v, dict):
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
         # TODO: there is a planned feature for dynaconf to allow defining schemas with
         # pydantic directly, which would avoid this weird dynaconf -> dict -> dict with
         # different keys -> pydantic steps
-        __dynaconf_dict__ = to_snake_case(cls.__dynaconf_settings__.to_dict())
+        __dynaconf_dict__ = to_snake_case(cls.__dynaconf_settings__.to_dict())  # type: ignore
 
         return cls.parse_obj(__dynaconf_dict__)
 

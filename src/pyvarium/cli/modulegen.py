@@ -1,13 +1,11 @@
-"""Install the specified environment."""
-
 from pathlib import Path
 
 import typer
 from jinja2 import Template
 
-from ..installers.pyvarium import Pyvarium
+from pyvarium.installers import spack
 
-app = typer.Typer(help="Generate modulefile to load the current environment")
+app = typer.Typer(help="Generate modulefile to load the environment.")
 
 modulefile_template = Template(
     """#%Module 1.0
@@ -31,20 +29,18 @@ if { [ module-info mode load ] } {
 
 @app.callback(invoke_without_command=True)
 def main(
-    path: Path = typer.Argument("."),
+    path: Path = typer.Option(".", file_okay=False),
 ):
     path = Path(path).absolute()
-    installer = Pyvarium.env_load(path)
 
-    res = (
-        installer.spack.cmd("env activate --sh .", no_env=True, prepend="env -i")
-        .stdout.decode()
-        .split("\n")
-    )
+    se = spack.SpackEnvironment(path)
+    res = se.program.cmd("env", "activate", "--sh", ".")
+
+    commands = res.stdout.decode().split("\n")
 
     env_vars = {
         l.strip("export ").split("=")[0]: l.strip("export ").split("=")[1]
-        for l in res
+        for l in commands
         if l.startswith("export ")
     }
 
