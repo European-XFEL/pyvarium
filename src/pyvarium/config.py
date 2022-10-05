@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import rtoml
-from dynaconf import Dynaconf
+from dynaconf import Dynaconf  # type: ignore
 from pydantic import BaseSettings, FilePath, root_validator
 
 THIS_DIR = Path(__file__).parent.absolute()
