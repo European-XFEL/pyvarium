@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 from typing import List, Optional
 
@@ -15,8 +13,8 @@ app = typer.Typer(no_args_is_help=True, help="Add packages via spack or pipenv."
 def main(
     path: Optional[Path] = None,
     *,
-    pipenv_add: Optional[list[str]] = None,
-    spack_add: Optional[list[str]] = None,
+    pipenv_add: Optional[List[str]] = None,
+    spack_add: Optional[List[str]] = None,
 ):
     if path is None:
         path = Path(".")

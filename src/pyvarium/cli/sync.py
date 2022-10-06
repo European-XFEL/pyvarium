@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from loguru import logger
 from rich.status import Status
 
 from pyvarium.installers import pipenv, spack
@@ -22,8 +21,8 @@ def main(
     with Status("Syncing Spack and Pipenv packages") as status:
         se = spack.SpackEnvironment(path, status=status)
         pe = pipenv.PipenvEnvironment(path, status=status)
-        se_python = se.find_python_packages(only_names=True)
-        pe.add(*se_python)
+        if se_python := se.find_python_packages(only_names=True):
+            pe.add(*se_python)
 
 
 if __name__ == "__main__":

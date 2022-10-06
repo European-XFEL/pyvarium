@@ -60,11 +60,11 @@ class Program:
             capture_output=True,
         )
 
+        logger.debug(res)
+
         if res.returncode != 0:
             logger.error(f"Process return code is not 0: {res=}")
 
-        logger.debug(res.stderr.decode()) if res.stderr else None
-        logger.trace(res.stdout.decode()) if res.stdout else None
         return res
 
     def config(self):
