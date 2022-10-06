@@ -8,8 +8,8 @@ with contextlib.suppress(ImportError):
     import spack.config  # type: ignore
     import spack.modules  # type: ignore
     import spack.modules.common  # type: ignore
-    from spack.environment.environment import (  # type: ignore
-        Environment as NativeSpackEnvironment,
+    from spack.environment.environment import (
+        Environment as NativeSpackEnvironment,  # type: ignore
     )
 
 

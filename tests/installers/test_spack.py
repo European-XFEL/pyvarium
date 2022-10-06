@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Generator
+
 import pytest
 
 from pyvarium.installers.spack import SpackEnvironment
@@ -39,18 +40,16 @@ class TestSpack:
         res = self.se.cmd("env", "st")
         assert str(self.se.path) in res.stdout.decode()
 
-    def test_add(self):
-        res = self.se.add("python", "py-pip", "py-numpy")
-        assert "Adding python to environment" in res.stdout.decode()
+    def test_no_python_packages(self):
+        assert self.se.find_python_packages() is None
 
     def test_install_no_lock(self):
         res = self.se.install()
         assert "no specs to install" in res.stdout.decode()
 
-    def test_spec(self):
-        res = self.se.spec("python")
-        assert type(res) is dict
-        assert res["spec"]["nodes"][0]["name"] == "python"
+    def test_add(self):
+        res = self.se.add("python", "py-pip", "py-numpy")
+        assert "Adding python to environment" in res.stdout.decode()
 
     def test_concretize(self):
         res = self.se.concretize()
@@ -58,6 +57,8 @@ class TestSpack:
         assert "Concretized python" in out
 
     def test_install(self):
+        self.se.add("python", "py-pip", "py-numpy")
+        self.se.concretize()
         res = self.se.install()
         assert f"Installing environment {str(self.se.path)}" in res.stdout.decode()
 
@@ -65,7 +66,7 @@ class TestSpack:
         res = self.se.find_python_packages()
         assert type(res) is list
         assert type(res[0]) is dict
-        assert any(r["name"] == "numpy" for r in res)
+        assert any(r["name"] == "numpy" for r in res)  # type: ignore
 
     def test_find_python_packages_only_names(self):
         res = self.se.find_python_packages(only_names=True)

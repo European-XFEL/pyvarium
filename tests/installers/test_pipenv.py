@@ -1,7 +1,8 @@
+import subprocess
 from pathlib import Path
 from typing import Generator
+
 import pytest
-import subprocess
 
 from pyvarium.installers.pipenv import PipenvEnvironment
 

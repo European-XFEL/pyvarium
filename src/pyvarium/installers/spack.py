@@ -21,8 +21,8 @@ def recursive_dict_update(d, u):
     return d
 
 
-def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
-    return json.loads(cmd.stdout.decode())
+# def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
+#     return json.loads(cmd.stdout.decode())
 
 
 class Spack(Program):
@@ -30,7 +30,7 @@ class Spack(Program):
         spack_dir = self.executable.parent.parent
         hooks_dir = spack_dir / "lib" / "spack" / "spack" / "hooks"
 
-        if not hooks_dir.exists():
+        if not hooks_dir.exists():  # pragma: no cover
             raise FileNotFoundError(
                 f"Spack hooks directory does not exist: {hooks_dir}"
             )
@@ -85,28 +85,28 @@ class SpackEnvironment(Environment):
         if not (self.path / "spack.lock").exists():
             logger.warning("No spack.lock file found, nothing will be installed")
 
-        return self.cmd("install", "--only-concrete", "--only", "package", "--no-add")
+        return self.cmd("install", "--only-concrete", "--no-add")
 
-    def spec(self, spec: str) -> dict:
-        res = self.cmd("spec", "-I", "--reuse", "--json", spec)
-        return cmd_json_to_dict(res)
+    # def spec(self, spec: str) -> dict:
+    #     res = self.cmd("spec", "-I", "--reuse", "--json", spec)
+    #     return cmd_json_to_dict(res)
 
     def concretize(self):
         return self.cmd("concretize", "--reuse")
 
-    def find(self) -> dict:
-        res = self.cmd("find", "--json")
-        return cmd_json_to_dict(res)
+    # def find(self) -> dict:
+    #     res = self.cmd("find", "--json")
+    #     return cmd_json_to_dict(res)
 
-    def find_missing(self) -> dict:
-        res = self.cmd(
-            "find", "--show-concretized", "--deps", "--only-missing", "--json"
-        )
-        return cmd_json_to_dict(res)
+    # def find_missing(self) -> dict:
+    #     res = self.cmd(
+    #         "find", "--show-concretized", "--deps", "--only-missing", "--json"
+    #     )
+    #     return cmd_json_to_dict(res)
 
     def find_python_packages(
         self, only_names: bool = False
-    ) -> Optional[Union[List, List[dict]]]:
+    ) -> Optional[Union[List[str], List[dict]]]:
         cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
         res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
         logger.debug(res)

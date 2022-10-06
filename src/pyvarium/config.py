@@ -1,7 +1,7 @@
 import shutil
+from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple
-from enum import Enum
 
 import rtoml
 from dynaconf import Dynaconf  # type: ignore
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
         paths = {"pipenv", "pipx", "poetry", "spack"}
 
         for p in paths:
-            if values[p] is None:
+            if values.get(p, None) is None:
                 if _ := shutil.which(p):
                     values[p] = Path(_)
 
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         """Load configurations via Dynaconf and parse them into a Settings object."""
 
         cls.__dynaconf_settings__ = Dynaconf(
-            settings_files=settings_files,
+            includes=settings_files,
             environments=False,
         )
 
