@@ -1,95 +1,74 @@
 from pathlib import Path
+from typing import Generator
 import pytest
 
-from pyvarium.installers.spack import Spack
+from pyvarium.installers.spack import SpackEnvironment
 
 
 class TestSpack:
+    se: SpackEnvironment
+
     @pytest.fixture(autouse=True, scope="class")
-    def root(self, tmp_path_factory) -> Path:
+    def root(self, tmp_path_factory) -> Generator[Path, None, None]:
         tmpdir = tmp_path_factory.mktemp("TestSpack")
-        root = Path(tmpdir) / "spack"
-        yield root
+        yield Path(tmpdir) / "spack"
 
-    @pytest.fixture(autouse=True, scope="class")
-    def environment(self, root) -> Path:
-        return root.parent / "environment"
+    @pytest.fixture(autouse=True)
+    def environment(self, root):
+        self.se = SpackEnvironment(root.parent / "environment")
 
-    def test_setup(self, root: Path):
-        Spack.setup(root)
-        assert (root / "bin" / "spack").is_file()
+    def test_new(self):
+        self.se.new()
+        assert (self.se.path / "spack.yaml").is_file()
 
-    def test_env_create(self, root: Path, environment: Path):
-        Spack.env_create(environment, executable=root / "bin" / "spack")
+    def test_init_view(self):
+        self.se.init_view()
+        assert (self.se.path / ".venv").is_dir()
 
-        assert (
-            environment / ".venv"
-        ).is_dir(), f"view not found at {environment / '.venv'}"
+    def test_setup_scripts_present(self):
+        assert (self.se.path / ".venv" / "bin" / "activate").is_file()
 
-        assert (
-            environment / "spack.yaml"
-        ).is_file(), f"config not found at {environment / 'spack.yaml'}"
+    def test_config(self):
+        # `set_config` is called during env creation, setting the following configs, so
+        # this test implicitly checks settings configs as well
+        config = self.se.get_config()
+        assert config["spack"]["concretizer"]["unify"]
+        assert config["spack"]["view"]["default"]["link"] == "run"
 
-    def test_env_configs(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment)
-        spack.cmd("compiler find")
-        spack.cmd("compiler list")
+    def test_cmd(self):
+        res = self.se.cmd("env", "st")
+        assert str(self.se.path) in res.stdout.decode()
 
-        with spack.config() as config:
-            assert config.spack.concretization == "together"
-            assert config.spack.view == str(environment / ".venv")
+    def test_add(self):
+        res = self.se.add("python", "py-pip", "py-numpy")
+        assert "Adding python to environment" in res.stdout.decode()
 
-    def test_env_add(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment)
-        spack.add(["python@3.8.11", "py-pip"])
+    def test_install_no_lock(self):
+        res = self.se.install()
+        assert "no specs to install" in res.stdout.decode()
 
-        with spack.config() as config:
-            assert "python@3.8.11" in config.spack.specs
-            assert "py-pip" in config.spack.specs
+    def test_spec(self):
+        res = self.se.spec("python")
+        assert type(res) is dict
+        assert res["spec"]["nodes"][0]["name"] == "python"
 
-        assert not (environment / "spack.lock").is_file()
+    def test_concretize(self):
+        res = self.se.concretize()
+        out = res.stdout.decode()
+        assert "Concretized python" in out
 
-    def test_env_concretize(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment)
-        spack.concretize()
+    def test_install(self):
+        res = self.se.install()
+        assert f"Installing environment {str(self.se.path)}" in res.stdout.decode()
 
-        assert (environment / "spack.lock").is_file()
+    def test_find_python_packages(self):
+        res = self.se.find_python_packages()
+        assert type(res) is list
+        assert type(res[0]) is dict
+        assert any(r["name"] == "numpy" for r in res)
 
-    def test_version(self, root: Path, environment: Path):
-        spack = Spack.env_load(environment)
-        assert spack.version
-
-
-class TestSpackIntegration:
-    @pytest.fixture(autouse=True, scope="class")
-    def root(self, cached_spack: Path) -> Path:
-        executable = cached_spack / "bin" / "spack"
-        assert executable.is_file(), "Spack executable not in cached instance"
-        return cached_spack
-
-    @pytest.fixture(autouse=True, scope="class")
-    def environment(self, tmp_path_factory) -> Path:
-        yield tmp_path_factory.getbasetemp() / "environment"
-
-    def test_env_install(self, root: Path, environment: Path):
-        spack = Spack.env_create(environment, executable=root / "bin" / "spack")
-
-        spack.add(["python@3.8.11", "py-pip"])
-        spack.concretize()
-        spack.install()
-
-    def test_python_present(self, root: Path, environment: Path):
-        assert (environment / ".venv" / "bin" / "python3").is_file()
-        assert (environment / ".venv" / "bin" / "pip3").is_file()
-
-    def test_env_install_parallel(self, root: Path, environment: Path):
-        spack = Spack.env_create(environment, executable=root / "bin" / "spack")
-
-        spack.add(["py-numpy"])
-        spack.concretize()
-        spack.install(processes=4)
-
-        # Check if numpy is available
-        assert (
-            environment / ".venv" / "lib" / "python3.8" / "site-packages" / "numpy"
-        ).is_dir()
+    def test_find_python_packages_only_names(self):
+        res = self.se.find_python_packages(only_names=True)
+        assert type(res) is list
+        assert type(res[0]) is str
+        assert any("numpy" in r for r in res)
