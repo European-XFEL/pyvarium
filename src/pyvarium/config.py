@@ -1,12 +1,18 @@
 import shutil
 from pathlib import Path
 from typing import Optional, Tuple
+from enum import Enum
 
 import rtoml
 from dynaconf import Dynaconf  # type: ignore
 from pydantic import BaseSettings, FilePath, root_validator
 
 THIS_DIR = Path(__file__).parent.absolute()
+
+
+class Scope(str, Enum):
+    user = "user"
+    local = "local"
 
 
 def to_snake_case(d: dict) -> dict:
@@ -40,6 +46,7 @@ class Settings(BaseSettings):
     pipx: Optional[FilePath]
     poetry: Optional[FilePath]
     spack: Optional[FilePath]
+    __dynaconf_settings__: Optional[Dynaconf]
 
     @root_validator
     def which_path(cls, values):
@@ -52,14 +59,13 @@ class Settings(BaseSettings):
 
         return values
 
-    __dynaconf_settings__: Optional[Dynaconf]
-
     @classmethod
     def load_dynaconf(
         cls,
         settings_files: Tuple[Path, ...] = (
             THIS_DIR / "settings.toml",
             Path("~/.config/pyvarium/settings.toml").expanduser(),
+            Path("./pyvarium.toml").absolute(),
         ),
     ) -> "Settings":
         """Load configurations via Dynaconf and parse them into a Settings object."""
@@ -76,13 +82,16 @@ class Settings(BaseSettings):
 
         return cls.parse_obj(__dynaconf_dict__)
 
-    def user_write(self):
+    def write(self, scope: Scope = Scope.user):
         settings = self.dict()
 
-        settings_file = Path("~/.config/pyvarium/settings.toml").expanduser()
+        if scope is Scope.user:
+            settings_file = Path("~/.config/pyvarium/settings.toml").expanduser()
+        elif scope is Scope.local:
+            settings_file = Path("./pyvarium.toml").absolute()
+
         settings_file.parent.mkdir(parents=True, exist_ok=True)
-        s = to_str(settings)
-        settings_file.write_text(rtoml.dumps(s))
+        settings_file.write_text(rtoml.dumps(to_str(settings)))
 
 
 settings = Settings.load_dynaconf()

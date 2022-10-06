@@ -1,8 +1,10 @@
+from pathlib import Path
 import rich
 import rich.pretty
 import typer
 
-from pyvarium.config import Settings, settings
+from pyvarium.config import Settings, settings, Scope
+from pyvarium.config import THIS_DIR as SETTINGS_DIR
 
 app = typer.Typer(no_args_is_help=True, help="Modify user settings for pyvarium.")
 
@@ -16,23 +18,22 @@ def _list() -> None:
 
 
 @app.command(name="set")
-def _set(key: str, value: str) -> None:
+def _set(key: str, value: str, scope: Scope = Scope.user) -> None:
     """Set a key value pair for configuration, e.g.
     `pyvarium set poetry_exec /opt/poetry/bin/poetry`."""
     settings.__setattr__(key, value)
     s = Settings(**settings.dict())
-    s.user_write()
+    s.write(scope)
     _list()
 
 
 @app.command()
-def unset(key: str) -> None:
+def unset(key: str, scope: Scope = Scope.user) -> None:
     """Remove a custom settings from configuration (this reverts to the default, to
     disable a default set it to an empty string, e.g. `pyvarium set poetry_exec ""`)."""
     settings.__delattr__(key)
     s = Settings(**settings.dict())
-    s.user_write()
-    s.user_write()
+    s.write(scope)
     _list()
 
 
@@ -40,9 +41,14 @@ def unset(key: str) -> None:
 def info() -> None:
     """Show information about the current configuration."""
 
-    rich.print("Files used for configuration:")
+    files = {
+        "builtin": SETTINGS_DIR / "settings.toml",
+        "user": Path("~/.config/pyvarium/settings.toml").expanduser(),
+        "local": Path("./pyvarium.toml").absolute(),
+    }
+
     rich.pretty.pprint(
-        list(Settings.load_dynaconf.__defaults__[0]),  # type: ignore
+        files,
         indent_guides=False,
         expand_all=True,
     )
