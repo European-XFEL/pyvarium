@@ -2,6 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+from typing import List, Optional, Union
 
 import yaml
 from loguru import logger
@@ -64,7 +65,8 @@ class SpackEnvironment(Environment):
                 "spack": {
                     "view": {
                         "default": {"root": str(view_path.resolve()), "link": "run"}
-                    }
+                    },
+                    "concretizer": {"unify": True},
                 }
             }
         )
@@ -102,23 +104,30 @@ class SpackEnvironment(Environment):
         )
         return cmd_json_to_dict(res)
 
-    def find_python_packages(self, only_names: bool = False):
+    def find_python_packages(
+        self, only_names: bool = False
+    ) -> Optional[Union[List, List[dict]]]:
         cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
         res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
+        logger.debug(res)
+        packages_json = res.stdout.decode().strip()
 
-        packages = json.loads(res.stdout.decode().strip())
+        if not packages_json:
+            return None
+
+        packages: List[dict] = json.loads(packages_json)
 
         if only_names:
-            packages = [
+            return [
                 f"{p['name']}=={p['version']}" for p in packages if p["name"] != "pip"
             ]
 
         return packages
 
-    def get_config(self):
+    def get_config(self) -> dict:
         return yaml.safe_load((self.path / "spack.yaml").read_text())
 
-    def set_config(self, config: dict):
+    def set_config(self, config: dict) -> None:
         current_config = self.get_config()
         new_config = recursive_dict_update(current_config, config)
 

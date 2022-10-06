@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import List, Optional
 
@@ -29,14 +31,11 @@ def main(
 
         se.install()
 
-    se_python = se.find_python_packages(only_names=True)
-
-    logger.info(f"Python packages in spack environment: {se_python}")
-
     with Status("Pipenv add") as status:
         pe = pipenv.PipenvEnvironment(path, status=status)
-        #  Sync python packages in spack environment w/ pipenv
-        pe.add(*se_python)
+        if se_python := se.find_python_packages(only_names=True):
+            logger.info(f"Python packages in spack environment: {se_python}")
+            pe.add(*se_python)
 
         if pipenv_add:
             pe.add(*pipenv_add)

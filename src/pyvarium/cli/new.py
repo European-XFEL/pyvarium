@@ -32,8 +32,8 @@ def main(
     with Status("Pipenv setup") as status:
         pe = pipenv.PipenvEnvironment(path, status=status)
         pe.new(python_path=se.path / ".venv" / "bin" / "python")
-        se_python = se.find_python_packages(only_names=True)
-        pe.add(*se_python)
+        if se_python := se.find_python_packages(only_names=True):
+            pe.add(*se_python)
 
 
 if __name__ == "__main__":
