@@ -26,7 +26,3 @@ def main(
     with Status("Pipenv install") as status:
         pe = pipenv.PipenvEnvironment(path, status=status)
         pe.install()
-
-
-if __name__ == "__main__":
-    app()

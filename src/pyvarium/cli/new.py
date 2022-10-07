@@ -34,7 +34,4 @@ def main(
         pe.new(python_path=se.path / ".venv" / "bin" / "python")
         if se_python := se.find_python_packages(only_names=True):
             pe.add(*se_python)
-
-
-if __name__ == "__main__":
-    app()
+        pe.lock()
