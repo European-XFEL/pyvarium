@@ -82,7 +82,7 @@ class Settings(BaseSettings):
 
         return cls.parse_obj(__dynaconf_dict__)
 
-    def write(self, scope: Scope = Scope.user):
+    def write(self, scope: Scope = Scope.local):
         settings = self.dict()
 
         if scope is Scope.user:

@@ -16,7 +16,7 @@ def _list() -> None:
 
 
 @app.command(name="set")
-def _set(key: str, value: str, scope: Scope = Scope.user) -> None:
+def _set(key: str, value: str, scope: Scope = Scope.local) -> None:
     """Set a key value pair for configuration, e.g.
     `pyvarium set poetry_exec /opt/poetry/bin/poetry`."""
     settings.__setattr__(key, value)
@@ -25,7 +25,7 @@ def _set(key: str, value: str, scope: Scope = Scope.user) -> None:
 
 
 @app.command()
-def unset(key: str, scope: Scope = Scope.user) -> None:
+def unset(key: str, scope: Scope = Scope.local) -> None:
     """Remove a custom settings from configuration (this reverts to the default, to
     disable a default set it to an empty string, e.g. `pyvarium set poetry_exec ""`)."""
     settings.__delattr__(key)
