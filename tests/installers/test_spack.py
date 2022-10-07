@@ -41,7 +41,7 @@ class TestSpack:
         assert str(self.se.path) in res.stdout.decode()
 
     def test_no_python_packages(self):
-        assert self.se.find_python_packages() is None
+        assert self.se.find_python_packages() == []
 
     def test_install_no_lock(self):
         res = self.se.install()

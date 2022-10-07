@@ -2,7 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Union, overload
 
 import yaml
 from loguru import logger
@@ -104,25 +104,39 @@ class SpackEnvironment(Environment):
     #     )
     #     return cmd_json_to_dict(res)
 
+    @overload
+    def find_python_packages(self) -> List[str]:
+        ...
+
+    @overload
+    def find_python_packages(self, only_names: Literal[True]) -> List[str]:
+        ...
+
+    @overload
+    def find_python_packages(self, only_names: Literal[False]) -> List[dict]:
+        ...
+
     def find_python_packages(
         self, only_names: bool = False
-    ) -> Optional[Union[List[str], List[dict]]]:
+    ) -> Union[List[str], List[dict]]:
         cmd = "PYTHONNOUSERSITE=True .venv/bin/python -m pip list --format json --disable-pip-version-check"
         res = subprocess.run(cmd, shell=True, capture_output=True, cwd=self.path)
         logger.debug(res)
         packages_json = res.stdout.decode().strip()
 
         if not packages_json:
-            return None
+            return []  # type: ignore
 
-        packages: List[dict] = json.loads(packages_json)
+        packages_dict: List[dict] = json.loads(packages_json)
 
         if only_names:
             return [
-                f"{p['name']}=={p['version']}" for p in packages if p["name"] != "pip"
+                f"{p['name']}=={p['version']}"
+                for p in packages_dict
+                if p["name"] != "pip"
             ]
-
-        return packages
+        else:
+            return packages_dict
 
     def get_config(self) -> dict:
         return yaml.safe_load((self.path / "spack.yaml").read_text())
