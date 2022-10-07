@@ -26,8 +26,8 @@ def main(
 
         if spack_add:
             se.add(*spack_add)
-
-        se.install()
+            se.concretize()
+            se.install()
 
     with Status("Pipenv add") as status:
         pe = pipenv.PipenvEnvironment(path, status=status)
