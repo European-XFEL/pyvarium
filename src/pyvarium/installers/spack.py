@@ -21,8 +21,8 @@ def recursive_dict_update(d, u):
     return d
 
 
-# def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
-#     return json.loads(cmd.stdout.decode())
+def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
+    return json.loads(cmd.stdout.decode())
 
 
 class Spack(Program):
@@ -94,9 +94,9 @@ class SpackEnvironment(Environment):
     def concretize(self):
         return self.cmd("concretize", "--reuse")
 
-    # def find(self) -> dict:
-    #     res = self.cmd("find", "--json")
-    #     return cmd_json_to_dict(res)
+    def find(self) -> dict:
+        res = self.cmd("find", "--json")
+        return cmd_json_to_dict(res)
 
     # def find_missing(self) -> dict:
     #     res = self.cmd(
