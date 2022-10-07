@@ -1,16 +1,6 @@
-import contextlib
 import venv
 from dataclasses import dataclass
 from pathlib import Path
-
-with contextlib.suppress(ImportError):
-    import llnl.util.tty as tty  # type: ignore
-    import spack.config  # type: ignore
-    import spack.modules  # type: ignore
-    import spack.modules.common  # type: ignore
-    from spack.environment.environment import (
-        Environment as NativeSpackEnvironment,  # type: ignore
-    )
 
 
 @dataclass

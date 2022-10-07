@@ -1,4 +1,3 @@
-# FROM spack/ubuntu-bionic
 FROM ecpe4s/ubuntu20.04:22.08
 
 RUN . /spack/share/spack/setup-env.sh && spack install python && spack install py-pip
