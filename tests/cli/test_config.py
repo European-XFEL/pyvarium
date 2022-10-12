@@ -6,7 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from pyvarium.cli import app
-from pyvarium.config import Settings
+from pyvarium.config import THIS_DIR, Settings
 
 runner = CliRunner()
 
@@ -65,7 +65,7 @@ def test_info(invoke, tmp_home, tmp_cwd):
     assert (
         res.stdout
         == f"""{{
-    <Scope.builtin: 'builtin'>: PosixPath('/src/pyvarium/src/pyvarium/settings.toml'),
+    <Scope.builtin: 'builtin'>: PosixPath('{THIS_DIR}/settings.toml'),
     <Scope.user: 'user'>: PosixPath('{tmp_home}/.config/pyvarium/settings.toml'),
     <Scope.local: 'local'>: PosixPath('{tmp_cwd}/pyvarium.toml')
 }}
