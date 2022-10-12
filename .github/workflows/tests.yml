@@ -7,7 +7,11 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-20.04
-    container: ghcr.io/european-xfel/pyvarium:test
+    container:
+      image: ghcr.io/european-xfel/pyvarium:test
+      credentials:
+        username:  ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
         shell: bash
