@@ -23,7 +23,7 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cache/pip
-          key: ${{ matrix.python-version }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          key: pyproject-${{ hashFiles('**/pyproject.toml') }}
       - name: Setup
         run: |
           python3 -m pip install --upgrade pip
@@ -31,6 +31,6 @@ jobs:
       - name: Test
         run: |
           source /spack/share/spack/setup-env.sh
-          python3 -m pytest -n auto --dist loadfile
+          python3 -m pytest -n 8 --dist loadfile
       - name: Upload to Codecov
         uses: codecov/codecov-action@v2
