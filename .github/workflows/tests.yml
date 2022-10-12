@@ -7,7 +7,7 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-20.04
-    container: ghcr.io/european-xfel/pyvarium-test-image:main
+    container: ghcr.io/european-xfel/pyvarium:test
     defaults:
       run:
         shell: bash

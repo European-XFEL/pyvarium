@@ -11,3 +11,5 @@ RUN pipx install pipenv
 RUN pipx install poetry
 
 ENV PATH="${PATH}:/root/.local/bin"
+
+LABEL org.opencontainers.image.source https://github.com/European-XFEL/pyvarium
