@@ -12,7 +12,7 @@ jobs:
     container:
       image: ghcr.io/european-xfel/pyvarium:test
       credentials:
-        username:  ${{ github.actor }}
+        username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     defaults:
       run:
@@ -30,6 +30,7 @@ jobs:
           python3 -m pip install ".[test]"
       - name: Test
         run: |
+          source /spack/share/spack/setup-env.sh
           python3 -m pytest -n auto --dist loadfile
       - name: Upload to Codecov
         uses: codecov/codecov-action@v2
