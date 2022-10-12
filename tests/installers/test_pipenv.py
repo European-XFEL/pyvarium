@@ -10,7 +10,7 @@ from pyvarium.installers.pipenv import PipenvEnvironment
 class TestPipenv:
     pe: PipenvEnvironment
 
-    @pytest.fixture(autouse=True, scope="class")
+    @pytest.fixture(autouse=True, scope="module")
     def root(self, tmp_path_factory) -> Generator[Path, None, None]:
         tmpdir = tmp_path_factory.mktemp("TestPipenv")
         yield Path(tmpdir) / "pipenv"
