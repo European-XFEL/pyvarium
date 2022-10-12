@@ -10,9 +10,7 @@ app = typer.Typer()
 
 
 @app.callback(invoke_without_command=True)
-def main(
-    path: Path = typer.Argument(..., file_okay=False),
-):
+def main(path: Path = typer.Argument(..., file_okay=False)):
     """Create a new combined Spack and Pipenv environment."""
 
     if path.exists():

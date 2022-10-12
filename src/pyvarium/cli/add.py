@@ -11,14 +11,11 @@ app = typer.Typer(no_args_is_help=True, help="Add packages via spack or pipenv."
 
 
 def main(
-    path: Optional[Path] = None,
+    path: Path,
     *,
     pipenv_add: Optional[List[str]] = None,
     spack_add: Optional[List[str]] = None,
 ):
-    if path is None:
-        path = Path(".")
-
     path = path.resolve()
 
     with Status("Spack add") as status:
@@ -42,8 +39,7 @@ def main(
 @app.command(name="spack")
 def _spack(
     packages: List[str],
-    *,
-    path: Optional[Path] = typer.Option(".", file_okay=False),
+    path: Path = typer.Option(".", file_okay=False),
 ):
     main(path, spack_add=packages)
 
@@ -51,7 +47,6 @@ def _spack(
 @app.command(name="pipenv")
 def _pipenv(
     packages: List[str],
-    *,
-    path: Optional[Path] = typer.Option(".", file_okay=False),
+    path: Path = typer.Option("", file_okay=False),
 ):
     main(path, pipenv_add=packages)

@@ -105,7 +105,7 @@ class SpackEnvironment(Environment):
     #     return cmd_json_to_dict(res)
 
     @overload
-    def find_python_packages(self) -> List[str]:
+    def find_python_packages(self) -> List[dict]:
         ...
 
     @overload

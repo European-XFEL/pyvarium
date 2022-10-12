@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.status import Status
@@ -10,12 +9,7 @@ app = typer.Typer(help="Sync Spack-managed packages with Pipenv.")
 
 
 @app.callback(invoke_without_command=True)
-def main(
-    path: Optional[Path] = typer.Option(".", file_okay=False),
-):
-    if path is None:
-        path = Path(".")
-
+def main(path: Path = typer.Option(".", file_okay=False)):
     path = path.resolve()
 
     with Status("Syncing Spack and Pipenv packages") as status:

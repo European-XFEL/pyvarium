@@ -28,9 +28,7 @@ if { [ module-info mode load ] } {
 
 
 @app.callback(invoke_without_command=True)
-def main(
-    path: Path = typer.Option(".", file_okay=False),
-):
+def main(path: Path = typer.Option(".", file_okay=False)):
     path = Path(path).absolute()
 
     se = spack.SpackEnvironment(path)

@@ -3,7 +3,6 @@ from pathlib import Path
 import typer
 from rich.pretty import pprint
 
-from pyvarium.config import THIS_DIR as SETTINGS_DIR
 from pyvarium.config import Scope, settings
 
 app = typer.Typer(no_args_is_help=True, help="Modify user settings for pyvarium.")
@@ -37,11 +36,7 @@ def unset(key: str, scope: Scope = Scope.local) -> None:
 def info() -> None:
     """Show information about the current configuration."""
 
-    files = {
-        "builtin": SETTINGS_DIR / "settings.toml",
-        "user": Path("~/.config/pyvarium/settings.toml").expanduser(),
-        "local": Path("./pyvarium.toml").absolute(),
-    }
+    files = settings.settings_scopes()
 
     pprint(
         files,
