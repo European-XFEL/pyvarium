@@ -73,7 +73,7 @@ class Settings(BaseSettings):
         """Load configurations via Dynaconf and parse them into a Settings object."""
 
         cls.__dynaconf_settings__ = Dynaconf(
-            includes=cls.settings_scopes().values(),
+            includes=list(cls.settings_scopes().values()),
             environments=False,
         )
 

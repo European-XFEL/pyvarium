@@ -30,7 +30,7 @@ def setup_scripts(spack_view_path: Path):
     eb.setup_scripts(context)  # type: ignore
 
 
-def post_env_write(env):
+def post_env_write(env):  # pragma: no cover
     # The scripts are written every time an env event occurs, as they almost always
     # overwrite/delete the existing scripts
     if "default" in env.views:

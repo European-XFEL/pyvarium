@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import typer
 from jinja2 import Template
@@ -28,11 +29,14 @@ if { [ module-info mode load ] } {
 
 
 @app.callback(invoke_without_command=True)
-def main(path: Path = typer.Option(".", file_okay=False)):
+def main(
+    path: Path = typer.Option(".", file_okay=False),
+    name: Optional[str] = typer.Option("/".join(Path.cwd().parts[-2:])),
+):
     path = Path(path).absolute()
 
     se = spack.SpackEnvironment(path)
-    res = se.program.cmd("env", "activate", "--sh", ".")
+    res = se.program.cmd("env", "activate", "--sh", str(path))
 
     commands = res.stdout.decode().split("\n")
 
@@ -42,14 +46,19 @@ def main(path: Path = typer.Option(".", file_okay=False)):
         if l.startswith("export ")
     }
 
-    env_vars.pop("PYTHONPATH", None)
+    paths = env_vars["PATH"].strip(";").split(":")
+    paths.remove(se.program.env["PATH"])
 
-    env_vars["VIRTUAL_ENV"] = f"{path.parent.name}/{path.name}"
+    env_vars["PATH"] = ":".join(paths)
+    env_vars["VIRTUAL_ENV"] = name
 
-    paths = {k: ":".join(list(v.split(":"))).strip(":;") for k, v in env_vars.items()}
+    paths = {
+        k: ":".join(list(v.split(":"))).strip(";").strip(":")
+        for k, v in env_vars.items()
+    }
 
-    print(
-        modulefile_template.render(
-            name=path.name, paths=[f"{k} {v}" for k, v in paths.items()]
-        ),
+    modulefile = modulefile_template.render(
+        name=name, paths=[f"{k} {v}" for k, v in paths.items()]
     )
+
+    typer.echo(modulefile, color=False)
