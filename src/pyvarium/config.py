@@ -1,7 +1,7 @@
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import rtoml
 from dynaconf import Dynaconf  # type: ignore
@@ -11,6 +11,7 @@ THIS_DIR = Path(__file__).parent.absolute()
 
 
 class Scope(str, Enum):
+    builtin = "builtin"
     user = "user"
     local = "local"
 
@@ -59,19 +60,20 @@ class Settings(BaseSettings):
 
         return values
 
+    @staticmethod
+    def settings_scopes() -> Dict[Scope, Path]:
+        return {
+            Scope.builtin: THIS_DIR / "settings.toml",
+            Scope.user: Path("~/.config/pyvarium/settings.toml").expanduser(),
+            Scope.local: Path("./pyvarium.toml").absolute(),
+        }
+
     @classmethod
-    def load_dynaconf(
-        cls,
-        settings_files: Tuple[Path, ...] = (
-            THIS_DIR / "settings.toml",
-            Path("~/.config/pyvarium/settings.toml").expanduser(),
-            Path("./pyvarium.toml").absolute(),
-        ),
-    ) -> "Settings":
+    def load_dynaconf(cls) -> "Settings":
         """Load configurations via Dynaconf and parse them into a Settings object."""
 
         cls.__dynaconf_settings__ = Dynaconf(
-            includes=settings_files,
+            includes=cls.settings_scopes().values(),
             environments=False,
         )
 
@@ -84,14 +86,9 @@ class Settings(BaseSettings):
 
     def write(self, scope: Scope = Scope.local):
         settings = self.dict()
-
-        if scope is Scope.user:
-            settings_file = Path("~/.config/pyvarium/settings.toml").expanduser()
-        elif scope is Scope.local:
-            settings_file = Path("./pyvarium.toml").absolute()
-
-        settings_file.parent.mkdir(parents=True, exist_ok=True)
-        settings_file.write_text(rtoml.dumps(to_str(settings)))
+        target = self.settings_scopes()[scope].expanduser().absolute()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(rtoml.dumps(to_str(settings)))
 
 
 settings = Settings.load_dynaconf()
