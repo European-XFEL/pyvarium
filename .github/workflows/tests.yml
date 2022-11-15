@@ -26,7 +26,6 @@ jobs:
           key: pyproject-${{ hashFiles('**/pyproject.toml') }}
       - name: Setup
         run: |
-          python3 -m pip install --upgrade pip poetry
           poetry install
       - name: Test
         run: |
