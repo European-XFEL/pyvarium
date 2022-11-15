@@ -42,7 +42,8 @@ class Program:
         # FIX: something somewhere in pipenv/python test PATH to `None`, which then
         # causes an exception in `subprocess.run`
         python_bin = str(Path(sys.executable).absolute().parent)
-        self.env["PATH"] = f"{python_bin}"
+        tar_bin = str(Path(sys.executable).absolute().parent)
+        self.env["PATH"] = f"{python_bin}:{tar_bin}"
 
         if post_init:
             self.__post_init__()
