@@ -1,31 +1,26 @@
 # Pyvarium
 
-Pyvarium is a tool designed to help create environments which are managed by
-both [Spack](github.com/spack/spack/) and
-[Poetry](https://github.com/python-poetry/poetry).
+Pyvarium is a tool designed to help create environments which are managed by [Spack](github.com/spack/spack/) and a pure python environment manager like [Pipenv](https://pipenv.pypa.io/en/latest/) or [Poetry](https://github.com/python-poetry/poetry).
 
-It aims to help tackle the problem of long term reproducibility and portability
-of software environments, especially in the area of scientific HPC, by combining
-the ability of Spack to compile arbitrary software (as long as a package Spack
-package has been written for it) and the ability of Poetry to create isolated
-and versioned Python environments.
+It aims to help tackle the problem of long term reproducibility and portability of software environments, especially in the area of scientific HPC, by combining the ability of Spack to compile arbitrary software (as long as a package Spack package has been written for it) and flexibility of python environments.
 
 ## Installation
 
 Simplest installation is with [pipx](https://github.com/pypa/pipx):
 
-```
+```shell
 pipx install pyvarium
 ```
 
+Note that Pyvarium is designed to **manage** Spack and python environments, so an existing spack installation as well as a supported backend (e.g. pipenv) is required for Pyvarium to run.
+
 ## Quick Start
 
-```sh
+```shell
 $ pyvarium --help
 Usage: pyvarium [OPTIONS] COMMAND [ARGS]...
 
-  Tool used to deploy computational environments managed with multiple tools
-  like Poetry and Spack.
+Deploy mixed computational environments with dependencies and packages provided by Spack and Pipenv
 
 Options:
   --log-level [TRACE|DEBUG|INFO|WARNING|ERROR|CRITICAL]
@@ -40,150 +35,127 @@ Options:
   --help                          Show this message and exit.
 
 Commands:
-  install    Install the specified environment.
-  modulegen  Generate modulefile to load the current environment
-  new        Create a new environment - requires existing instances
-  setup      Set up Spack/Poetry instances
-  sync       Sync Spack-managed packages with Poetry pyproject.toml
+  add                                Add packages via spack or pipenv.
+  config                             Modify user settings for pyvarium.
+  install                            Concretize and install an existing environment.
+  modulegen                          Generate modulefile to load the environment.
+  new                                Create a new combined Spack and Pipenv environment.
+  sync                               Sync Spack-managed packages with Pipenv.
 ```
 
-Spack and Poetry are required by Pyvarium, both can be quickly set up with:
+To create a new environment:
 
 ```
-$ pyvarium setup spack /opt/pyvarium/spack-2022
-$ pyvarium setup poetry /opt/pyvarium/poetry
+$ pyvarium new ./environment-demo
 ```
 
-Now a new environment can be created which uses those spack and poetry instances:
+This creates a new directory `./environment-demo` which has Pipenv (`Pipfile`, `Pipfile.lock`) and Spack (`spack.yaml`, `spack.lock`) environment specification files in it. By default these will only specify `python` and `pip` as requirements.
 
-```
-$ pyvarium new ./environment-demo /opt/pyvarium/poetry /opt/pyvarium/spack-2022
-```
+In general setting up the environment should be done in a specific order, you must install any python packages which have **external dependencies** via Spack **first**, then install any required pure python packages via pipenv afterwards. Otherwise python packages with external dependencies will use their bundled binaries instead of whatever is provided via spack.
 
-This creates a new directory `./environment-demo` which has Poetry
-(`pyproject.toml`, `poetry.lock`) and Spack (`spack.yaml`, `spack.lock`)
-environment specification files in it, as well as `activate` scripts which can
-be used to activate the environment
 
-In general setting up the environment must be done in a specific order, you must
-install any python packages which have **external dependencies** via Spack
-**first**, then run `pyvarium sync .`, and only then install any remaining
-python packages via Poetry:
+Installation of dependencies can be done with `pyvarium add {spack,pipenv}`, this command is a wrapper around the respective add/install commands which ensures that the dependencies specified by both programs remain in sync:
 
-```
-$ source activate.sh
-$ spack add py-h5py py-numpy ...
-$ spack install  # Once finished, run sync:
-$ pyvarium sync .  # Then install additional packages via Poetry:
-$ poetry add ...
+```shell
+$ pyvarium add spack py-numpy py-h5py
+$ pyvarium add pipenv extra-data
 ```
 
-The sync command will check for any python packages that were installed by Spack
-and add them to `pyproject.toml` with a fixed version, so that Poetry does not
-attempt to re-install, update, or modify them
+The above commands would install numpy and h5py via spack, compiling dependencies along the way, sync these packages with `Pipfile` so that pipenv is aware of what is already within the environment, and then install any specified packages via pipenv.
 
-Finally you an generate a module file with `pyvarium modulegen .`
+The environment can be activated as a normal venv with `source .venv/bin/activate`, or a module file can be created for it with with `pyvarium modulegen`.
 
 ## Usage
 
-### `pyvarium setup`
+```shell
+Usage: pyvarium [OPTIONS] COMMAND [ARGS]...
 
-Pyvarium needs Poetry and an existing Spack instance to work, for convenience a
-`setup` command is included to help set these two up:
+ Deploy mixed computational environments with dependencies and packages provided by Spack and Pipenv
 
-```sh
-$ pyvarium setup --help
-Usage: pyvarium setup [OPTIONS] COMMAND PREFIX [ARGS]...
-
-  Set up Spack/Poetry instances
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  poetry
-  spack
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ --log-level                 [TRACE|DEBUG|INFO|WARNING|ERROR|C  Pick which level of output to show  │
+│                             RITICAL]                           [default: LogLevel.info]            │
+│ --install-completion                                           Install completion for the current  │
+│                                                                shell.                              │
+│ --show-completion                                              Show completion for the current     │
+│                                                                shell, to copy it or customize the  │
+│                                                                installation.                       │
+│ --help                                                         Show this message and exit.         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────╮
+│ add              Add packages via spack or pipenv.                                                 │
+│ config           Modify user settings for pyvarium.                                                │
+│ install          Concretize and install an existing environment.                                   │
+│ modulegen        Generate modulefile to load the environment.                                      │
+│ new              Create a new combined Spack and Pipenv environment.                               │
+│ sync             Sync Spack-managed packages with Pipenv.                                          │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-For example:
+### `config`
 
-```
-$ pyvarium setup spack /opt/pyvarium/spack-2022
-$ pyvarium setup poetry /opt/pyvarium/poetry
-```
+```shell
+Usage: pyvarium config [OPTIONS] COMMAND [ARGS]...
 
-Would set up a spack instance at `/opt/pyvarium/spack-2022` and poetry at
-`/opt/pyvarium/poetry`
+ Modify user settings for pyvarium.
 
-### `pyvarium new`
-
-Once instances are preset you can create a new environment:
-
-```
-$ pyvarium new --help
-Usage: pyvarium new [OPTIONS] PATH POETRY_PREFIX SPACK_PREFIX COMMAND
-                    [ARGS]...
-
-  Create a new environment - requires existing instances
-
-Options:
-  PATH                            [required]
-  POETRY_PREFIX                   [required]
-  SPACK_PREFIX                    [required]
-  --name TEXT
-  --install-processes INTEGER     [default: 1]
-  --skip-py-install / --no-skip-py-install
-                                  [default: False]
-  --force / --no-force            [default: False]
-  --help                          Show this message and exit.
-
-$ pyvarium new ./environment-demo /opt/pyvarium/poetry /opt/pyvarium/spack-2022
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────╮
+│ info   Show information about the current configuration.                                           │
+│ list   List configuration.                                                                         │
+│ set    Set a key value pair for configuration, e.g. `pyvarium set poetry_exec                      │
+│        /opt/poetry/bin/poetry`.                                                                    │
+│ unset  Remove a custom settings from configuration (this reverts to the default, to disable a      │
+│        default set it to an empty string, e.g. `pyvarium set poetry_exec ""`).                     │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-Creating a new environment requires a path to existing poetry and spack
-instances, by default pyvarium will bootstrap new environments by installing
-python into the spack instance if it is not already present
+`info` will show the absolute location of the configuration files being used, in the order they are loaded.
 
-This can be time consuming, to skip this use the `--skip-py-install` flag
+`list` shows the current configuration.
 
-Once the environment is set up the directory will contain:
+`set` can be used to set a key-value pair, and `unset` can be used to remove one. Setting and unsetting configurations can be performed at different scopes: `local` for the local directory (e.g. creating a `pyvarium.toml` file), `user` for the user configuration (`~/.config/pyvarium/settings.toml`), and `builtin` to modify the default configuration within the package.
 
-```
-.
-├── .venv
-├── activate.fish
-├── activate.sh
-├── poetry.lock
-├── poetry.toml
-├── pyproject.toml
-├── spack.lock
-└── spack.yaml
+The configuration is a TOML file containing the paths to the executables to be used by pyvarium, for example:
+
+```toml
+pipenv = "/home/roscar/.local/bin/pipenv"
+pipx = "/home/roscar/.local/bin/pipx"
+poetry = "/sbin/poetry"
+spack = "/opt/spack"
 ```
 
-You can source the `activate` files to load the environment and begin installing
-software into the environment with standard Spack commands, followed by running
-`pyvarium sync`, and then Poetry commands
+By default, if an entry is not present in the file for one of these programs, it is automatically set to the path of `which $program`.
 
-### `pyvarium sync`
+### `new`
 
-The sync command is the main purpose of pyvarium:
+```shell
+Usage: pyvarium new [OPTIONS] PATH COMMAND [ARGS]...
 
+ Create a new combined Spack and Pipenv environment.
+
+╭─ Arguments ────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    path      DIRECTORY  [default: None] [required]                                               │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-$ pyvarium sync .
+
+### `add`
+
+```shell
+Usage: pyvarium add [OPTIONS] COMMAND [ARGS]...
+
+ Add packages via spack or pipenv.
+
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                        │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────────╮
+│ pipenv                                                                                             │
+│ spack                                                                                              │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-
-Running it will first find any packages managed by Spack and then add them to
-`pyproject.toml` with pinned versions so that Poetry does not attempt to modify
-them
-
-This way you can use Spack to install and manage complex dependencies which
-require compilation, as well as python Packages which depend on external compiled
-software, but you also retain the ability to install normal python packages
-without having to create a Spack package for them
-
-## TODO
-
-- Work on creating a spack hook which runs sync after python packages are installed
-- Add copying that hook into spack to `pyvarium setup spack`
-- Work on hook that does git commits and pushes automatically
-- Use named environments instead of anonymous ones
