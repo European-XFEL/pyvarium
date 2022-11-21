@@ -1,5 +1,7 @@
 # Pyvarium
 
+[![Tests](https://github.com/European-XFEL/pyvarium/actions/workflows/tests.yml/badge.svg)](https://github.com/European-XFEL/pyvarium/actions/workflows/tests.yml) | [![Docs](https://github.com/European-XFEL/pyvarium/actions/workflows/docs.yml/badge.svg)](https://european-xfel.github.io/pyvarium/)
+
 Pyvarium is a tool designed to help create environments which are managed by [Spack](github.com/spack/spack/) and a pure python environment manager like [Pipenv](https://pipenv.pypa.io/en/latest/) or [Poetry](https://github.com/python-poetry/poetry).
 
 It aims to help tackle the problem of long term reproducibility and portability of software environments, especially in the area of scientific HPC, by combining the ability of Spack to compile arbitrary software (as long as a package Spack package has been written for it) and flexibility of python environments.
