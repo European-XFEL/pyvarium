@@ -47,8 +47,9 @@ def main(
     }
 
     paths = env_vars["PATH"].strip(";").split(":")
-    if se.program.env["PATH"] in paths:
-        paths.remove(se.program.env["PATH"])
+    for exclude_path in se.program.persistent_path.strip(";").split(":"):
+        if exclude_path in paths:
+            paths.remove(exclude_path)
 
     env_vars["PATH"] = ":".join(paths)
     env_vars["VIRTUAL_ENV"] = name
