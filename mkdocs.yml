@@ -1,0 +1,45 @@
+site_name: Pyvarium Documentation
+site_description: Pyvarium - Mixed Spack and Pip Environment Management
+
+theme:
+  name: material
+  palette:
+    scheme: preference
+    language: en
+  features:
+    - content.code.annotate
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - toc.integrate
+
+repo_url: https://github.com/European-XFEL/pyvarium
+edit_uri: https://github.com/European-XFEL/pyvarium
+
+nav:
+  - Index: './index.md'
+
+watch:
+  - src/pyvarium
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - attr_list
+  - mdx_include
+
+plugins:
+  - search
+  - section-index
+
+extra_css:
+  - css/material.css

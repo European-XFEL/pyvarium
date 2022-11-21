@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/european-xfel/pyvarium:test
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pip
+          key: pyproject-${{ hashFiles('**/pyproject.toml') }}
+      - name: Setup
+        run: |
+          poetry install
+      - name: Test
+        run: |
+          source /spack/share/spack/setup-env.sh
+          poetry run pytest
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v2
