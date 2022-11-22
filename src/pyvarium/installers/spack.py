@@ -130,13 +130,35 @@ class SpackEnvironment(Environment):
         packages_dict: List[dict] = json.loads(packages_json)
 
         if only_names:
-            return [
-                f"{p['name']}=={p['version']}"
-                for p in packages_dict
-                if p["name"] != "pip"
-            ]
+            return [f"{p['name']}=={p['version']}" for p in packages_dict]
         else:
             return packages_dict
+
+    def verify(self) -> dict[Path, list]:
+        view_path = self.path / ".venv"
+        packages = list((view_path / ".spack").iterdir())
+
+        package_warnings = {}
+
+        for package in packages:
+            self.program.update_status(f"{package.name}")
+            manifest_file = package / "install_manifest.json"
+            manifest = json.loads(manifest_file.read_text())
+            package_path = manifest_file.resolve().parent.parent
+            files = {
+                Path(k.replace(str(package_path), str(view_path))): Path(k)
+                for k, v in manifest.items()
+                if v["type"] == "file" and ".spack" not in k and "bin" not in k
+            }
+
+            warnings = []
+            for link, target in files.items():
+                if not link.resolve() == target.resolve():
+                    warnings.append((link, target))
+
+            package_warnings[package] = warnings
+
+        return package_warnings
 
     def get_config(self) -> dict:
         return yaml.safe_load((self.path / "spack.yaml").read_text())

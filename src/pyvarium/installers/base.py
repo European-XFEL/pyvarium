@@ -64,7 +64,10 @@ class Program:
         logger.debug(res)
 
         if res.returncode != 0:
-            raise RuntimeError(f"Process return code is not 0: {res=}")
+            logger.error(res.stderr.decode())
+            raise RuntimeError(
+                f"Process return code is not 0: {res.args=}, {res.returncode=}"
+            )
 
         return res
 

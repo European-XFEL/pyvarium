@@ -11,7 +11,7 @@ from rich.logging import RichHandler
 from rich.markdown import Markdown
 from rich.prompt import Confirm
 
-from . import add, config, install, modulegen, new, sync
+from . import add, config, install, modulegen, new, sync, verify
 
 app = typer.Typer()
 
@@ -89,6 +89,7 @@ app.add_typer(install.app, name="install")
 app.add_typer(modulegen.app, name="modulegen")
 app.add_typer(new.app, name="new")
 app.add_typer(sync.app, name="sync")
+app.add_typer(verify.app, name="verify")
 
 
 if __name__ == "__main__":

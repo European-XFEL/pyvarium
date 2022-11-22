@@ -23,7 +23,7 @@ def main(path: Path = typer.Argument(..., file_okay=False)):
     with Status("Spack setup") as status:
         se = spack.SpackEnvironment(path, status=status)
         se.new()
-        se.add("python", "py-pip")
+        se.add("python", "py-pip", "py-setuptools")
         se.concretize()
         se.install()
 
