@@ -21,6 +21,7 @@ def main(path: Path = typer.Option(".", file_okay=False), fix: bool = False):
 
         if all(len(w) == 0 for w in warnings.values()):
             logger.info("All packages in view are correctly symlinked to spack")
+            raise typer.Exit(0)
 
         for path, warning in warnings.items():
             package_name = path.name
@@ -35,3 +36,17 @@ def main(path: Path = typer.Option(".", file_okay=False), fix: bool = False):
                         if file.exists():
                             file.unlink()
                         file.symlink_to(target)
+
+        if fix:
+            logger.info("Re-checking status of Spack packages in view")
+            warnings = se.verify()
+            if all(len(w) == 0 for w in warnings.values()):
+                logger.info("All packages in view are correctly symlinked to spack")
+                raise typer.Exit(0)
+            else:
+                broken_packages = [p.name for p in warnings if len(warnings[p]) > 0]
+                logger.error(
+                    f"Some packages are still not linked correctly: {broken_packages}"
+                )
+
+        raise typer.Exit(1)
