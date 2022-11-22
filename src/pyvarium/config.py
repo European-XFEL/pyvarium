@@ -1,7 +1,7 @@
 import shutil
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import rtoml
 from dynaconf import Dynaconf  # type: ignore
@@ -16,7 +16,7 @@ class Scope(str, Enum):
     local = "local"
 
 
-def to_snake_case(d: dict) -> dict:
+def to_snake_case(d: Dict) -> Dict:
     """Recursively converts the keys of a dictionary to snake_case style."""
     res = {}
     for k, v in d.items():
@@ -28,7 +28,7 @@ def to_snake_case(d: dict) -> dict:
     return res
 
 
-def to_str(d: dict) -> dict:
+def to_str(d: Dict) -> Dict:
     """Recursively converts the values of a dictionary to str."""
     res = {}
     for k, v in d.items():
@@ -78,7 +78,7 @@ class Settings(BaseSettings):
         )
 
         # TODO: there is a planned feature for dynaconf to allow defining schemas with
-        # pydantic directly, which would avoid this weird dynaconf -> dict -> dict with
+        # pydantic directly, which would avoid this weird dynaconf -> Dict -> Dict with
         # different keys -> pydantic steps
         __dynaconf_dict__ = to_snake_case(cls.__dynaconf_settings__.to_dict())  # type: ignore
 

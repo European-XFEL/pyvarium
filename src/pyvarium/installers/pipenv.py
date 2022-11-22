@@ -26,6 +26,7 @@ class PipenvEnvironment(Environment):
     def __post_init__(self):
         self.program.cwd = self.path
         self.program.env["VIRTUAL_ENV"] = str((self.path / ".venv").absolute())
+        self.program.env["PIPENV_VERBOSITY"] = "-1"
         self.program.env["PIPENV_PYTHON"] = str(
             (self.path / ".venv" / "bin" / "python").absolute()
         )
@@ -49,10 +50,10 @@ class PipenvEnvironment(Environment):
         return self.program.cmd(*commands)
 
     def add(self, *packages):
-        return self.program.cmd("install", *packages)
+        return self.program.cmd("--site-packages", "install", *packages)
 
     def install(self):
-        return self.program.cmd("install")
+        return self.program.cmd("--site-packages", "install")
 
     def lock(self):
         return self.program.cmd("lock")
