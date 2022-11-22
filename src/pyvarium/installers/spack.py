@@ -2,7 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import List, Literal, Union, overload
+from typing import List, Literal, Union, overload, Dict
 
 import yaml
 from loguru import logger
@@ -21,7 +21,7 @@ def recursive_dict_update(d, u):
     return d
 
 
-def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> dict:
+def cmd_json_to_dict(cmd: subprocess.CompletedProcess) -> Dict:
     return json.loads(cmd.stdout.decode())
 
 
@@ -87,18 +87,18 @@ class SpackEnvironment(Environment):
 
         return self.cmd("install", "--only-concrete", "--no-add")
 
-    # def spec(self, spec: str) -> dict:
+    # def spec(self, spec: str) -> Dict:
     #     res = self.cmd("spec", "-I", "--reuse", "--json", spec)
     #     return cmd_json_to_dict(res)
 
     def concretize(self):
         return self.cmd("concretize", "--reuse")
 
-    def find(self) -> dict:
+    def find(self) -> Dict:
         res = self.cmd("find", "--json")
         return cmd_json_to_dict(res)
 
-    # def find_missing(self) -> dict:
+    # def find_missing(self) -> Dict:
     #     res = self.cmd(
     #         "find", "--show-concretized", "--deps", "--only-missing", "--json"
     #     )
@@ -134,7 +134,7 @@ class SpackEnvironment(Environment):
         else:
             return packages_dict
 
-    def verify(self) -> dict[Path, list]:
+    def verify(self) -> Dict[Path, list]:
         view_path = self.path / ".venv"
         packages = list((view_path / ".spack").iterdir())
 
@@ -160,10 +160,10 @@ class SpackEnvironment(Environment):
 
         return package_warnings
 
-    def get_config(self) -> dict:
+    def get_config(self) -> Dict:
         return yaml.safe_load((self.path / "spack.yaml").read_text())
 
-    def set_config(self, config: dict) -> None:
+    def set_config(self, config: Dict) -> None:
         current_config = self.get_config()
         new_config = recursive_dict_update(current_config, config)
 
