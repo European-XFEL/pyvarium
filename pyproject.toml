@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pyvarium"
-version = "0.1.1"
+version = "0.2.0"
 description = "Tool for managing mixed Spack and pip packages"
 readme = "README.md"
 authors = ["Robert Rosca <32569096+RobertRosca@users.noreply.github.com>"]
